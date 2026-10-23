@@ -122,7 +122,9 @@ def test_unlock_value_lifecycle(links, clock):
     rec = links.store[links.create(password=PW)["token"]]
     value = links.unlock_value(rec)
     assert links.unlocked(rec, value, max_age_s=3600)
-    assert not links.unlocked(rec, value[:-1] + "0", max_age_s=3600)
+    assert not links.unlocked(
+        rec, value[:-1] + ("1" if value[-1] == "0" else "0"), max_age_s=3600
+    )
     assert not links.unlocked(rec, None, max_age_s=3600)
     assert not links.unlocked(rec, "nonsense", max_age_s=3600)
     clock.t = T0 + timedelta(hours=2)
