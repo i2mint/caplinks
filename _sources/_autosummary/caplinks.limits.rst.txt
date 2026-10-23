@@ -1,0 +1,20 @@
+caplinks.limits
+===============
+
+.. automodule:: caplinks.limits
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_MAX_PER_WINDOW
+      DFLT_MAX_KEYS
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      RateLimiter
+      SlidingWindowLimiter
+   

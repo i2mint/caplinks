@@ -1,0 +1,37 @@
+﻿caplinks
+========
+
+.. automodule:: caplinks
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      check_token
+      is_expired
+      new_token
+      now_utc
+      parse_expires
+      public_record
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CapabilityLinks
+      PasswordHasher
+      RateLimiter
+      ScryptHasher
+      SlidingWindowLimiter
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   expiry
+   limits
+   links
+   passwords

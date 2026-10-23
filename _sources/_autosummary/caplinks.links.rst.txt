@@ -1,0 +1,28 @@
+caplinks.links
+==============
+
+.. automodule:: caplinks.links
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      RECORD_FIELDS
+      DFLT_EXPIRES
+      MIN_PASSWORD_LEN
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      check_token
+      new_token
+      public_record
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      CapabilityLinks
+   

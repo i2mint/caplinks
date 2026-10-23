@@ -1,0 +1,23 @@
+# caplinks
+
+> Capability links: an unguessable token, an optional password gate, expiry, revocation and attempt limits. Standard library only.
+
+
+## Pages
+
+- [caplinks](index.html.md): Capability links: hand someone a link to one thing, with no account. The token is the permission; a ...
+- [API reference](api.html.md): | &#96;caplinks&#96;   | Capability links: an unguessable token, an optional password gate, expiry, attempt ...
+- [caplinks](_autosummary/caplinks.html.md): Capability links: an unguessable token, an optional password gate, expiry, attempt limits.
+- [caplinks.expiry](_autosummary/caplinks.expiry.html.md): When a link stops working: reading an expiry the way a person writes one.
+- [caplinks.limits](_autosummary/caplinks.limits.html.md): Limiting password attempts: the &#96;allow(key) -&gt; bool&#96; protocol and an in-memory default.
+- [caplinks.links](_autosummary/caplinks.links.html.md): Capability links: a record behind an unguessable token, with an optional password gate.
+- [caplinks.passwords](_autosummary/caplinks.passwords.html.md): Password hashing for a link’s password gate: a protocol and a stdlib default.
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-23 03:07 UTC&#42;&#42; from commit &lt;a href="https://github.com/i2m...
+
+## Optional
+
+- [caplinks.md](caplinks.md): Complete documentation in a single file.
+
+## Build
+
+- [build_info.json](build_info.json): build provenance (commit, version, tool versions, whether the docs match the package)

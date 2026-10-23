@@ -1,0 +1,16 @@
+# caplinks
+
+> Capability links: an unguessable token, an optional password gate, expiry, revocation and attempt limits. Standard library only.
+
+
+## Pages in this subsection
+
+- [caplinks](caplinks.html.md): Capability links: an unguessable token, an optional password gate, expiry, attempt limits.
+- [caplinks.expiry](caplinks.expiry.html.md): When a link stops working: reading an expiry the way a person writes one.
+- [caplinks.limits](caplinks.limits.html.md): Limiting password attempts: the &#96;allow(key) -&gt; bool&#96; protocol and an in-memory default.
+- [caplinks.links](caplinks.links.html.md): Capability links: a record behind an unguessable token, with an optional password gate.
+- [caplinks.passwords](caplinks.passwords.html.md): Password hashing for a link’s password gate: a protocol and a stdlib default.
+
+## Optional
+
+- [Top-level llms.txt](../llms.txt): Complete documentation index.

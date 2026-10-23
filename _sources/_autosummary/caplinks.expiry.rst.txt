@@ -1,0 +1,22 @@
+caplinks.expiry
+===============
+
+.. automodule:: caplinks.expiry
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DURATION_UNITS
+      NEVER
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      expires_at
+      is_expired
+      now_utc
+      parse_expires
+   
