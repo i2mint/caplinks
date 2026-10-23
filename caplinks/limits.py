@@ -50,6 +50,8 @@ class SlidingWindowLimiter:
         max_keys: int = DFLT_MAX_KEYS,
         clock: Callable[[], float] = time.monotonic,
     ):
+        if max_per_window < 1 or max_keys < 1:
+            raise ValueError("max_per_window and max_keys must be at least 1")
         self.max_per_window = max_per_window
         self.window_s = window_s
         self.max_keys = max_keys

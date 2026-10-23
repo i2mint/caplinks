@@ -55,7 +55,10 @@ def parse_expires(value, *, now: datetime | None = None) -> str | None:
         m = _DURATION_RE.match(s)
         if m:
             n, unit = int(m.group(1)), DURATION_UNITS[m.group(2).lower()]
-            when = now + timedelta(**{unit: n})
+            try:
+                when = now + timedelta(**{unit: n})
+            except OverflowError:
+                raise ValueError(f"expiry {value!r} is too far away") from None
         elif _DATE_RE.fullmatch(s):
             when = datetime.fromisoformat(s).replace(
                 hour=23, minute=59, second=59, tzinfo=timezone.utc
@@ -68,7 +71,10 @@ def parse_expires(value, *, now: datetime | None = None) -> str | None:
                     f"not an expiry: {value!r}; give a duration (7d, 12h), a date "
                     "(2026-11-01) or an ISO timestamp"
                 ) from None
-    when = _as_utc(when)
+    try:
+        when = _as_utc(when)
+    except OverflowError:
+        raise ValueError(f"expiry {value!r} is too far away") from None
     if when <= now:
         raise ValueError(f"expiry {when.isoformat()} is already past")
     return when.isoformat()
@@ -84,7 +90,7 @@ def expires_at(record: dict) -> datetime | None:
         return None
     try:
         return _as_utc(datetime.fromisoformat(exp))
-    except TypeError:
+    except (TypeError, OverflowError):
         raise ValueError(f"not a timestamp: {exp!r}") from None
 
 

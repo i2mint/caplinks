@@ -15,7 +15,7 @@ reaches (its scope) and how it is served stay with the app.
 True
 """
 
-from caplinks.expiry import expires_at, is_expired, now_utc, parse_expires
+from caplinks.expiry import is_expired, now_utc, parse_expires
 from caplinks.limits import RateLimiter, SlidingWindowLimiter
 from caplinks.links import (
     DFLT_EXPIRES,
@@ -38,7 +38,6 @@ __all__ = [
     "ScryptHasher",
     "SlidingWindowLimiter",
     "check_token",
-    "expires_at",
     "is_expired",
     "new_token",
     "now_utc",

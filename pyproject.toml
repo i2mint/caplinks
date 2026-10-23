@@ -9,7 +9,7 @@ name = "caplinks"
 version = "0.0.1"
 description = "Capability links: an unguessable token, an optional password gate, expiry, revocation and attempt limits. Standard library only."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = "MIT"
 keywords = ["capability", "share link", "token", "password", "expiry", "rate limit", "scrypt"]
 authors = [
@@ -48,7 +48,7 @@ exclude = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py311"
+target-version = "py310"
 exclude = [
     "**/*.ipynb",
     "**/*.md",
@@ -129,7 +129,7 @@ enabled = false
 [tool.wads.ci.testing]
 enabled = true
 python_versions = [
-    "3.11",
+    "3.10",
     "3.12",
 ]
 pytest_args = [

@@ -14,8 +14,10 @@ A correct password earns an unlock value (a cookie, for a web host): an HMAC key
 the stored hash, so a new password, or a revoke, which clears the hash, ends every open
 session at once.
 
-A store that cannot vouch for a record (damaged, unreadable) raises ``KeyError`` or
-``ValueError`` on reading it, and the link is then missing: every failure closes it.
+The store contract: a store that cannot vouch for a record (unreadable, damaged, or
+missing the host's own fields) raises ``KeyError``, ``ValueError`` or ``OSError`` when
+it is read, and the link is then missing. A record whose generic fields have the wrong
+types is missing too: every failure closes the link.
 
 >>> links = CapabilityLinks()
 >>> rec = links.create({"what": "report-1"}, password="open sesame", expires="7d")
@@ -39,6 +41,8 @@ TOKEN_BYTES = 16  # 128 bits
 TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]{20,64}$")
 #: the fields every record has; a host's own fields may not reuse these names
 RECORD_FIELDS = ("token", "created", "expires", "password", "revoked")
+#: fields the owner's view of a record adds (:func:`public_record`, ``list``)
+_VIEW_FIELDS = ("protected", "active")
 #: a link lasts this long unless told otherwise (``"never"`` for no expiry)
 DFLT_EXPIRES = "7d"
 #: the shortest link password accepted (a gate tried from anywhere must not be guessable)
@@ -108,7 +112,7 @@ class CapabilityLinks:
         default (``"never"`` for none); ``password`` gates the link.
         """
         fields = dict(fields or {})
-        clash = sorted(set(fields) & set(RECORD_FIELDS))
+        clash = sorted(set(fields) & {*RECORD_FIELDS, *_VIEW_FIELDS})
         if clash:
             raise ValueError(f"fields {clash} are the link's own; name yours otherwise")
         if password is not None and len(password) < self.min_password_len:
@@ -129,14 +133,14 @@ class CapabilityLinks:
         return public_record(record)
 
     def record(self, token: str) -> dict | None:
-        """The stored record (hash included), revoked or not; ``None`` if there is none."""
+        """A copy of the stored record (hash included), revoked or not; ``None`` if none."""
         try:
             rec = self.store[check_token(token)]
-        except (KeyError, ValueError):
+        except (KeyError, ValueError, OSError):
             return None
-        if not isinstance(rec, dict) or rec.get("token") != token:
+        if not _well_formed(rec, token):
             return None  # damaged, or filed under another name: grants nothing
-        return rec
+        return dict(rec)
 
     def status(self, token: str) -> tuple[str, dict | None]:
         """``("ok" | "expired" | "missing", record)``; a revoked link is ``missing``."""
@@ -147,8 +151,9 @@ class CapabilityLinks:
             return "expired", rec
         return "ok", rec
 
-    def list(self, *, all: bool = False) -> list[dict]:
-        """Every live link, newest first, without hashes; ``all`` adds revoked and expired.
+    def list(self, *, include_inactive: bool = False) -> list[dict]:
+        """Every live link, newest first, without hashes; ``include_inactive`` adds
+        revoked and expired ones.
 
         Each record gains ``active`` (neither revoked nor expired).
         """
@@ -160,9 +165,9 @@ class CapabilityLinks:
                 continue
             rec = public_record(rec)
             rec["active"] = not rec.get("revoked") and not is_expired(rec, now=now)
-            if all or rec["active"]:
+            if include_inactive or rec["active"]:
                 out.append(rec)
-        return sorted(out, key=lambda r: r.get("created") or "", reverse=True)
+        return sorted(out, key=lambda r: r["created"], reverse=True)
 
     def revoke(self, token: str) -> dict:
         """End a link now (idempotent). The record stays, as a tombstone."""
@@ -187,7 +192,12 @@ class CapabilityLinks:
         return f"{issued}.{_unlock_mac(record, issued)}"
 
     def unlocked(self, record: dict, value: str | None, *, max_age_s: int) -> bool:
-        """Whether ``value`` is a live unlock of ``record`` (no password: always)."""
+        """Whether ``value`` is a live unlock of ``record`` (no password: always).
+
+        A revoked record is never unlocked, whatever the caller checked before.
+        """
+        if record.get("revoked"):
+            return False
         if not record.get("password"):
             return True
         if not value or "." not in value:
@@ -200,7 +210,8 @@ class CapabilityLinks:
         now = int(self.clock().timestamp())
         if not (now - max_age_s <= issued <= now + _UNLOCK_SKEW_S):
             return False
-        return hmac.compare_digest(mac, _unlock_mac(record, issued))
+        expected = _unlock_mac(record, issued)
+        return hmac.compare_digest(mac.encode("utf-8"), expected.encode("ascii"))
 
     def unlock_max_age(self, record: dict, *, max_age_s: int) -> int:
         """How long an unlock should last, in seconds: ``max_age_s``, never past expiry."""
@@ -212,6 +223,17 @@ class CapabilityLinks:
             return max_age_s
         left = int((ends - self.clock()).total_seconds())
         return max(1, min(max_age_s, left))
+
+
+def _well_formed(rec, token: str) -> bool:
+    """The generic fields have the types every method relies on."""
+    optional_str = lambda v: v is None or isinstance(v, str)  # noqa: E731
+    return (
+        isinstance(rec, dict)
+        and rec.get("token") == token
+        and isinstance(rec.get("created"), str)
+        and all(optional_str(rec.get(k)) for k in ("expires", "password", "revoked"))
+    )
 
 
 def _unlock_mac(record: dict, issued: int) -> str:

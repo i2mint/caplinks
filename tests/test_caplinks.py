@@ -98,7 +98,7 @@ def test_list_newest_first_and_all_adds_inactive(links, clock):
     assert [r["token"] for r in links.list()] == [b, a]
     clock.t = T0 + timedelta(hours=2)
     assert [r["token"] for r in links.list()] == [b]
-    everything = links.list(all=True)
+    everything = links.list(include_inactive=True)
     assert {r["token"] for r in everything} == {a, b, c}
     assert all("password" not in r for r in everything)
     assert {r["token"]: r["active"] for r in everything} == {
@@ -208,3 +208,59 @@ def test_limiter_bounds_its_keys_and_fits_the_protocol():
             return True
 
     assert isinstance(Redisish(), RateLimiter)
+
+
+def test_view_fields_are_reserved_too(links):
+    for name in ("protected", "active"):
+        with pytest.raises(ValueError, match="link's own"):
+            links.create({name: 1})
+
+
+def test_a_hostile_unlock_value_is_refused_not_raised(links, clock):
+    rec = links.record(links.create(password=PW)["token"])
+    now = int(clock().timestamp())
+    assert not links.unlocked(rec, f"{now}.é", max_age_s=60)
+
+
+def test_a_revoked_record_is_never_unlocked(links):
+    tok = links.create(password=PW)["token"]
+    links.revoke(tok)
+    assert not links.unlocked(links.record(tok), None, max_age_s=60)
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [{"password": 123}, {"created": 5}, {"expires": 7}, {"revoked": []}],
+)
+def test_a_record_with_mistyped_fields_is_missing_and_spares_the_list(links, damage):
+    good = links.create()["token"]
+    bad = links.create()["token"]
+    links.store[bad] = {**links.store[bad], **damage}
+    assert links.record(bad) is None and links.status(bad)[0] == "missing"
+    assert [r["token"] for r in links.list(include_inactive=True)] == [good]
+
+
+def test_a_store_raising_oserror_closes_the_link(clock):
+    class Flaky(dict):
+        def __getitem__(self, k):
+            raise OSError("ssh dropped")
+
+    assert CapabilityLinks(Flaky(), clock=clock).record("A" * 22) is None
+
+
+def test_record_is_a_copy(links):
+    tok = links.create(password=PW)["token"]
+    links.record(tok).pop("password")
+    assert links.record(tok)["password"]
+
+
+@pytest.mark.parametrize("value", ["99999999d", "9999-12-31T23:59:59-05:00"])
+def test_parse_expires_far_future_is_a_value_error(value):
+    with pytest.raises(ValueError, match="too far"):
+        parse_expires(value, now=T0)
+
+
+@pytest.mark.parametrize("kw", [{"max_keys": 0}, {"max_per_window": 0}])
+def test_limiter_refuses_settings_that_disable_it(kw):
+    with pytest.raises(ValueError):
+        SlidingWindowLimiter(**kw)

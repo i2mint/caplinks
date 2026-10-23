@@ -42,4 +42,4 @@ What a link reaches (its scope), how it is served (routes, cookie name, headers)
 | `clock` | `now_utc` | tests that pin the time |
 | `min_password_len` | 8 | a stricter or laxer gate |
 
-A store that cannot vouch for a record raises `KeyError` or `ValueError` when it is read, and the link is then missing: every failure closes the link.
+A store that cannot vouch for a record raises `KeyError`, `ValueError` or `OSError` when it is read, and the link is then missing; so is a record whose generic fields have the wrong types. Every failure closes the link.
