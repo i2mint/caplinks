@@ -45,7 +45,9 @@ class AttemptGuard:
     counts the wrong passwords a link takes from everyone and, past its limit, locks the
     link for ``lock_s`` seconds. Both are anything with ``allow(key) -> bool`` (a Redis
     one shares the count between workers); the lock itself is per process. ``clock``
-    returns a monotonic time in seconds (tests pin it).
+    returns a monotonic time in seconds (tests pin it; the default limiters use it too).
+    Keep ``lock_s`` at least the limiter's window, or the first failure after a lock ends
+    locks the link again at once.
     """
 
     def __init__(
@@ -57,10 +59,10 @@ class AttemptGuard:
         clock: Callable[[], float] = time.monotonic,
     ):
         self.client_limiter = client_limiter or SlidingWindowLimiter(
-            max_per_window=DFLT_MAX_ATTEMPTS, window_s=DFLT_WINDOW_S
+            max_per_window=DFLT_MAX_ATTEMPTS, window_s=DFLT_WINDOW_S, clock=clock
         )
         self.link_limiter = link_limiter or SlidingWindowLimiter(
-            max_per_window=DFLT_MAX_LINK_FAILURES, window_s=DFLT_WINDOW_S
+            max_per_window=DFLT_MAX_LINK_FAILURES, window_s=DFLT_WINDOW_S, clock=clock
         )
         self.lock_s = lock_s
         self._clock = clock

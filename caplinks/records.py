@@ -22,7 +22,7 @@ import tempfile
 from collections.abc import Callable, Iterator, MutableMapping
 from pathlib import Path
 
-from caplinks.links import check_token
+from caplinks.links import TOKEN_RE, check_token
 
 SUFFIX = ".json"
 
@@ -34,6 +34,8 @@ class JsonRecords(MutableMapping):
     ``KeyError``: the link is then missing (every failure closes the link). ``valid``
     takes the host's own check of its fields. ``deletable=False`` refuses ``del``: a
     host that keeps a revoked link as a tombstone says so. ``indent`` pretty-prints.
+
+    The contract of ``texts``: reading a missing name raises ``KeyError``.
     """
 
     def __init__(
@@ -59,7 +61,7 @@ class JsonRecords(MutableMapping):
     def __getitem__(self, token: str) -> dict:
         try:
             rec = json.loads(self.texts[self._name(token)])
-        except (ValueError, KeyError, OSError, RuntimeError):
+        except (ValueError, KeyError, OSError, RuntimeError, TypeError):
             raise KeyError(token) from None
         if not isinstance(rec, dict) or (self.valid and not self.valid(rec)):
             raise KeyError(token)
@@ -75,8 +77,9 @@ class JsonRecords(MutableMapping):
 
     def __iter__(self) -> Iterator[str]:
         for name in self.texts:
-            if name.endswith(SUFFIX):
-                yield name[: -len(SUFFIX)]
+            token = name[: -len(SUFFIX)]
+            if name.endswith(SUFFIX) and TOKEN_RE.match(token):
+                yield token
 
     def __len__(self) -> int:
         return sum(1 for _ in self)
@@ -91,32 +94,43 @@ class JsonRecords(MutableMapping):
 class FileTexts(MutableMapping):
     """``{name: text}`` over the files of one local folder (created on first write).
 
-    Names are plain file names (no path separator, no leading dot). A write goes to a
-    private temporary file (mode 0600) that replaces the target, so a reader never sees
-    half a record.
+    Names are plain file names (no path separator, no leading dot, no NUL); a name whose
+    file is a symlink out of the folder is missing. The folder is private (mode 0700:
+    the names are link tokens) and a write goes to a hidden temporary file (mode 0600)
+    that replaces the target, so a reader never sees half a record.
     """
 
     def __init__(self, folder: str | os.PathLike):
         self.folder = Path(folder).expanduser()
 
     def _path(self, name: str) -> Path:
-        if not name or name.startswith(".") or "/" in name or "\\" in name:
+        if (
+            not isinstance(name, str)
+            or not name
+            or name.startswith(".")
+            or any(c in name for c in "/\\\0")
+        ):
             raise KeyError(name)
-        return self.folder / name
+        path = self.folder / name
+        if path.is_symlink():
+            raise KeyError(name)
+        return path
 
     def __getitem__(self, name: str) -> str:
         try:
             return self._path(name).read_text(encoding="utf-8")
-        except FileNotFoundError:
+        except (FileNotFoundError, IsADirectoryError):
             raise KeyError(name) from None
 
     def __setitem__(self, name: str, text: str) -> None:
         path = self._path(name)
-        self.folder.mkdir(parents=True, exist_ok=True)
-        fd, tmp = tempfile.mkstemp(dir=self.folder, suffix=".tmp")  # mode 0600
+        self.folder.mkdir(mode=0o700, parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=self.folder, prefix=".", suffix=".tmp")  # 0600
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(text)
+                f.flush()
+                os.fsync(f.fileno())
             os.replace(tmp, path)
         except BaseException:
             Path(tmp).unlink(missing_ok=True)
@@ -130,11 +144,9 @@ class FileTexts(MutableMapping):
 
     def __iter__(self) -> Iterator[str]:
         if self.folder.is_dir():
-            yield from (
-                p.name
-                for p in self.folder.iterdir()
-                if p.is_file() and not p.name.endswith(".tmp")
-            )
+            for p in self.folder.iterdir():
+                if p.is_file() and not p.is_symlink() and not p.name.startswith("."):
+                    yield p.name
 
     def __len__(self) -> int:
         return sum(1 for _ in self)
