@@ -16,6 +16,7 @@ True
 """
 
 from caplinks.expiry import is_expired, now_utc, parse_expires
+from caplinks.guard import DFLT_MAX_ATTEMPTS, DFLT_MAX_LINK_FAILURES, AttemptGuard
 from caplinks.limits import RateLimiter, SlidingWindowLimiter
 from caplinks.links import (
     DFLT_EXPIRES,
@@ -27,8 +28,14 @@ from caplinks.links import (
     public_record,
 )
 from caplinks.passwords import PasswordHasher, ScryptHasher
+from caplinks.records import FileTexts, JsonRecords
 
 __all__ = [
+    "AttemptGuard",
+    "DFLT_MAX_ATTEMPTS",
+    "DFLT_MAX_LINK_FAILURES",
+    "FileTexts",
+    "JsonRecords",
     "CapabilityLinks",
     "DFLT_EXPIRES",
     "MIN_PASSWORD_LEN",
