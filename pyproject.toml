@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "caplinks"
-version = "0.0.2"
+version = "0.0.3"
 description = "Capability links: an unguessable token, an optional password gate, expiry, revocation and attempt limits. Standard library only."
 readme = "README.md"
 requires-python = ">=3.10"
