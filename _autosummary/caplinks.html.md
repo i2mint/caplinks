@@ -54,12 +54,15 @@ Whether `password` opens `record` (constant time inside the hasher).
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
-#### create(fields=None, , password=None, expires='7d')
+#### create(fields=None, , password=None, expires='7d', token=None)
 
 Make a link carrying the host’s `fields`; return its record without the hash.
 
 `expires` is anything [`caplinks.expiry.parse_expires()`](caplinks.expiry.html.md#caplinks.expiry.parse_expires) reads, 7 days by
-default (`"never"` for none); `password` gates the link.
+default (`"never"` for none); `password` gates the link. `token` gates an
+id that already exists (a host whose links must not change): it must look like
+a token ([`check_token()`](#caplinks.check_token)) and be unused; leave it out for a fresh one. The
+caller then owns the id’s randomness: use 128 random bits, as [`new_token()`](#caplinks.new_token).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -84,6 +87,25 @@ A copy of the stored record (hash included), revoked or not; `None` if none.
 #### revoke(token)
 
 End a link now (idempotent). The record stays, as a tombstone.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### set_expires(token, expires)
+
+Move an unrevoked link’s expiry (anything [`parse_expires()`](#caplinks.parse_expires) reads;
+`"never"` for none). An expired link may be given a later one; a revoked link
+stays revoked (`KeyError`).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### set_password(token, password)
+
+Give an unrevoked link a new password, or `None` to open it.
+
+A new password ends every open unlock at once. A revoked link stays revoked
+(`KeyError`).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

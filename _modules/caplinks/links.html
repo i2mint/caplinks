@@ -236,169 +236,220 @@ data-aria-dark="Switch to auto color mode">
 </span><span data-line="105">        <span class="o">*</span><span class="p">,</span>
 </span><span data-line="106">        <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span data-line="107">        <span class="n">expires</span><span class="o">=</span><span class="n">DFLT_EXPIRES</span><span class="p">,</span>
-</span><span data-line="108">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-</span><span data-line="109"><span class="w">        </span><span class="sd">"""Make a link carrying the host's ``fields``; return its record without the hash.</span>
-</span><span data-line="110">
-</span><span data-line="111"><span class="sd">        ``expires`` is anything :func:`caplinks.expiry.parse_expires` reads, 7 days by</span>
-</span><span data-line="112"><span class="sd">        default (``"never"`` for none); ``password`` gates the link.</span>
-</span><span data-line="113"><span class="sd">        """</span>
-</span><span data-line="114">        <span class="n">fields</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">fields</span> <span class="ow">or</span> <span class="p">{})</span>
-</span><span data-line="115">        <span class="n">clash</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span><span class="o">*</span><span class="n">RECORD_FIELDS</span><span class="p">,</span> <span class="o">*</span><span class="n">_VIEW_FIELDS</span><span class="p">})</span>
-</span><span data-line="116">        <span class="k">if</span> <span class="n">clash</span><span class="p">:</span>
-</span><span data-line="117">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"fields </span><span class="si">{</span><span class="n">clash</span><span class="si">}</span><span class="s2"> are the link's own; name yours otherwise"</span><span class="p">)</span>
-</span><span data-line="118">        <span class="k">if</span> <span class="n">password</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">password</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_password_len</span><span class="p">:</span>
-</span><span data-line="119">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-</span><span data-line="120">                <span class="sa">f</span><span class="s2">"a link password needs at least </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">min_password_len</span><span class="si">}</span><span class="s2"> characters "</span>
-</span><span data-line="121">                <span class="s2">"(anyone can try it); omit it for no password"</span>
-</span><span data-line="122">            <span class="p">)</span>
-</span><span data-line="123">        <span class="n">now</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
-</span><span data-line="124">        <span class="n">record</span> <span class="o">=</span> <span class="p">{</span>
-</span><span data-line="125">            <span class="s2">"token"</span><span class="p">:</span> <span class="n">new_token</span><span class="p">(),</span>
-</span><span data-line="126">            <span class="s2">"created"</span><span class="p">:</span> <span class="n">now</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
-</span><span data-line="127">            <span class="o">**</span><span class="n">fields</span><span class="p">,</span>
-</span><span data-line="128">            <span class="s2">"expires"</span><span class="p">:</span> <span class="n">parse_expires</span><span class="p">(</span><span class="n">expires</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="n">now</span><span class="p">),</span>
-</span><span data-line="129">            <span class="s2">"password"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasher</span><span class="o">.</span><span class="n">hash</span><span class="p">(</span><span class="n">password</span><span class="p">)</span> <span class="k">if</span> <span class="n">password</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-</span><span data-line="130">            <span class="s2">"revoked"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-</span><span data-line="131">        <span class="p">}</span>
-</span><span data-line="132">        <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">record</span><span class="p">[</span><span class="s2">"token"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">record</span>
-</span><span data-line="133">        <span class="k">return</span> <span class="n">public_record</span><span class="p">(</span><span class="n">record</span><span class="p">)</span></div>
+</span><span data-line="108">        <span class="n">token</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span data-line="109">    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span data-line="110"><span class="w">        </span><span class="sd">"""Make a link carrying the host's ``fields``; return its record without the hash.</span>
+</span><span data-line="111">
+</span><span data-line="112"><span class="sd">        ``expires`` is anything :func:`caplinks.expiry.parse_expires` reads, 7 days by</span>
+</span><span data-line="113"><span class="sd">        default (``"never"`` for none); ``password`` gates the link. ``token`` gates an</span>
+</span><span data-line="114"><span class="sd">        id that already exists (a host whose links must not change): it must look like</span>
+</span><span data-line="115"><span class="sd">        a token (:func:`check_token`) and be unused; leave it out for a fresh one. The</span>
+</span><span data-line="116"><span class="sd">        caller then owns the id's randomness: use 128 random bits, as :func:`new_token`.</span>
+</span><span data-line="117"><span class="sd">        """</span>
+</span><span data-line="118">        <span class="n">fields</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">fields</span> <span class="ow">or</span> <span class="p">{})</span>
+</span><span data-line="119">        <span class="k">if</span> <span class="n">token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="120">            <span class="n">check_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+</span><span data-line="121">            <span class="k">if</span> <span class="n">token</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">:</span>  <span class="c1"># even a damaged record is not free to overwrite</span>
+</span><span data-line="122">                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"a link with this token already exists"</span><span class="p">)</span>
+</span><span data-line="123">        <span class="n">clash</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span><span class="o">*</span><span class="n">RECORD_FIELDS</span><span class="p">,</span> <span class="o">*</span><span class="n">_VIEW_FIELDS</span><span class="p">})</span>
+</span><span data-line="124">        <span class="k">if</span> <span class="n">clash</span><span class="p">:</span>
+</span><span data-line="125">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"fields </span><span class="si">{</span><span class="n">clash</span><span class="si">}</span><span class="s2"> are the link's own; name yours otherwise"</span><span class="p">)</span>
+</span><span data-line="126">        <span class="n">hashed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hash_password</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
+</span><span data-line="127">        <span class="n">now</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+</span><span data-line="128">        <span class="n">record</span> <span class="o">=</span> <span class="p">{</span>
+</span><span data-line="129">            <span class="s2">"token"</span><span class="p">:</span> <span class="n">token</span> <span class="ow">or</span> <span class="n">new_token</span><span class="p">(),</span>
+</span><span data-line="130">            <span class="s2">"created"</span><span class="p">:</span> <span class="n">now</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+</span><span data-line="131">            <span class="o">**</span><span class="n">fields</span><span class="p">,</span>
+</span><span data-line="132">            <span class="s2">"expires"</span><span class="p">:</span> <span class="n">parse_expires</span><span class="p">(</span><span class="n">expires</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="n">now</span><span class="p">),</span>
+</span><span data-line="133">            <span class="s2">"password"</span><span class="p">:</span> <span class="n">hashed</span><span class="p">,</span>
+</span><span data-line="134">            <span class="s2">"revoked"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+</span><span data-line="135">        <span class="p">}</span>
+</span><span data-line="136">        <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">record</span><span class="p">[</span><span class="s2">"token"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">record</span>
+</span><span data-line="137">        <span class="k">return</span> <span class="n">public_record</span><span class="p">(</span><span class="n">record</span><span class="p">)</span></div>
 
-</span><span data-line="134">
+</span><span data-line="138">
 <div class="viewcode-block" id="CapabilityLinks.record">
 <a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.record">[docs]</a>
-</span><span data-line="135">    <span class="k">def</span><span class="w"> </span><span class="nf">record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-</span><span data-line="136"><span class="w">        </span><span class="sd">"""A copy of the stored record (hash included), revoked or not; ``None`` if none."""</span>
-</span><span data-line="137">        <span class="k">try</span><span class="p">:</span>
-</span><span data-line="138">            <span class="n">rec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">check_token</span><span class="p">(</span><span class="n">token</span><span class="p">)]</span>
-</span><span data-line="139">        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">):</span>
-</span><span data-line="140">            <span class="k">return</span> <span class="kc">None</span>
-</span><span data-line="141">        <span class="k">if</span> <span class="ow">not</span> <span class="n">_well_formed</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
-</span><span data-line="142">            <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># damaged, or filed under another name: grants nothing</span>
-</span><span data-line="143">        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span></div>
+</span><span data-line="139">    <span class="k">def</span><span class="w"> </span><span class="nf">record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="140"><span class="w">        </span><span class="sd">"""A copy of the stored record (hash included), revoked or not; ``None`` if none."""</span>
+</span><span data-line="141">        <span class="k">try</span><span class="p">:</span>
+</span><span data-line="142">            <span class="n">rec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">check_token</span><span class="p">(</span><span class="n">token</span><span class="p">)]</span>
+</span><span data-line="143">        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">):</span>
+</span><span data-line="144">            <span class="k">return</span> <span class="kc">None</span>
+</span><span data-line="145">        <span class="k">if</span> <span class="ow">not</span> <span class="n">_well_formed</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">token</span><span class="p">):</span>
+</span><span data-line="146">            <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># damaged, or filed under another name: grants nothing</span>
+</span><span data-line="147">        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span></div>
 
-</span><span data-line="144">
+</span><span data-line="148">
 <div class="viewcode-block" id="CapabilityLinks.status">
 <a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.status">[docs]</a>
-</span><span data-line="145">    <span class="k">def</span><span class="w"> </span><span class="nf">status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-</span><span data-line="146"><span class="w">        </span><span class="sd">"""``("ok" | "expired" | "missing", record)``; a revoked link is ``missing``."""</span>
-</span><span data-line="147">        <span class="n">rec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-</span><span data-line="148">        <span class="k">if</span> <span class="n">rec</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"revoked"</span><span class="p">):</span>
-</span><span data-line="149">            <span class="k">return</span> <span class="s2">"missing"</span><span class="p">,</span> <span class="kc">None</span>
-</span><span data-line="150">        <span class="k">if</span> <span class="n">is_expired</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()):</span>
-</span><span data-line="151">            <span class="k">return</span> <span class="s2">"expired"</span><span class="p">,</span> <span class="n">rec</span>
-</span><span data-line="152">        <span class="k">return</span> <span class="s2">"ok"</span><span class="p">,</span> <span class="n">rec</span></div>
+</span><span data-line="149">    <span class="k">def</span><span class="w"> </span><span class="nf">status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+</span><span data-line="150"><span class="w">        </span><span class="sd">"""``("ok" | "expired" | "missing", record)``; a revoked link is ``missing``."""</span>
+</span><span data-line="151">        <span class="n">rec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+</span><span data-line="152">        <span class="k">if</span> <span class="n">rec</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"revoked"</span><span class="p">):</span>
+</span><span data-line="153">            <span class="k">return</span> <span class="s2">"missing"</span><span class="p">,</span> <span class="kc">None</span>
+</span><span data-line="154">        <span class="k">if</span> <span class="n">is_expired</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()):</span>
+</span><span data-line="155">            <span class="k">return</span> <span class="s2">"expired"</span><span class="p">,</span> <span class="n">rec</span>
+</span><span data-line="156">        <span class="k">return</span> <span class="s2">"ok"</span><span class="p">,</span> <span class="n">rec</span></div>
 
-</span><span data-line="153">
+</span><span data-line="157">
 <div class="viewcode-block" id="CapabilityLinks.list">
 <a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.list">[docs]</a>
-</span><span data-line="154">    <span class="k">def</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">include_inactive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-</span><span data-line="155"><span class="w">        </span><span class="sd">"""Every live link, newest first, without hashes; ``include_inactive`` adds</span>
-</span><span data-line="156"><span class="sd">        revoked and expired ones.</span>
-</span><span data-line="157">
-</span><span data-line="158"><span class="sd">        Each record gains ``active`` (neither revoked nor expired).</span>
-</span><span data-line="159"><span class="sd">        """</span>
-</span><span data-line="160">        <span class="n">now</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
-</span><span data-line="161">        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span data-line="162">        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">):</span>
-</span><span data-line="163">            <span class="n">rec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-</span><span data-line="164">            <span class="k">if</span> <span class="n">rec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span data-line="165">                <span class="k">continue</span>
-</span><span data-line="166">            <span class="n">rec</span> <span class="o">=</span> <span class="n">public_record</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
-</span><span data-line="167">            <span class="n">rec</span><span class="p">[</span><span class="s2">"active"</span><span class="p">]</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"revoked"</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_expired</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="n">now</span><span class="p">)</span>
-</span><span data-line="168">            <span class="k">if</span> <span class="n">include_inactive</span> <span class="ow">or</span> <span class="n">rec</span><span class="p">[</span><span class="s2">"active"</span><span class="p">]:</span>
-</span><span data-line="169">                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
-</span><span data-line="170">        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="s2">"created"</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+</span><span data-line="158">    <span class="k">def</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">include_inactive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+</span><span data-line="159"><span class="w">        </span><span class="sd">"""Every live link, newest first, without hashes; ``include_inactive`` adds</span>
+</span><span data-line="160"><span class="sd">        revoked and expired ones.</span>
+</span><span data-line="161">
+</span><span data-line="162"><span class="sd">        Each record gains ``active`` (neither revoked nor expired).</span>
+</span><span data-line="163"><span class="sd">        """</span>
+</span><span data-line="164">        <span class="n">now</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+</span><span data-line="165">        <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span data-line="166">        <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">):</span>
+</span><span data-line="167">            <span class="n">rec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+</span><span data-line="168">            <span class="k">if</span> <span class="n">rec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="169">                <span class="k">continue</span>
+</span><span data-line="170">            <span class="n">rec</span> <span class="o">=</span> <span class="n">public_record</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
+</span><span data-line="171">            <span class="n">rec</span><span class="p">[</span><span class="s2">"active"</span><span class="p">]</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"revoked"</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_expired</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="n">now</span><span class="p">)</span>
+</span><span data-line="172">            <span class="k">if</span> <span class="n">include_inactive</span> <span class="ow">or</span> <span class="n">rec</span><span class="p">[</span><span class="s2">"active"</span><span class="p">]:</span>
+</span><span data-line="173">                <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
+</span><span data-line="174">        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="s2">"created"</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
-</span><span data-line="171">
+</span><span data-line="175">
+<div class="viewcode-block" id="CapabilityLinks.set_password">
+<a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.set_password">[docs]</a>
+</span><span data-line="176">    <span class="k">def</span><span class="w"> </span><span class="nf">set_password</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span data-line="177"><span class="w">        </span><span class="sd">"""Give an unrevoked link a new password, or ``None`` to open it.</span>
+</span><span data-line="178">
+</span><span data-line="179"><span class="sd">        A new password ends every open unlock at once. A revoked link stays revoked</span>
+</span><span data-line="180"><span class="sd">        (``KeyError``).</span>
+</span><span data-line="181"><span class="sd">        """</span>
+</span><span data-line="182">        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_hash_password</span><span class="p">(</span><span class="n">password</span><span class="p">))</span></div>
+
+</span><span data-line="183">
+<div class="viewcode-block" id="CapabilityLinks.set_expires">
+<a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.set_expires">[docs]</a>
+</span><span data-line="184">    <span class="k">def</span><span class="w"> </span><span class="nf">set_expires</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">expires</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span data-line="185"><span class="w">        </span><span class="sd">"""Move an unrevoked link's expiry (anything :func:`parse_expires` reads;</span>
+</span><span data-line="186"><span class="sd">        ``"never"`` for none). An expired link may be given a later one; a revoked link</span>
+</span><span data-line="187"><span class="sd">        stays revoked (``KeyError``).</span>
+</span><span data-line="188"><span class="sd">        """</span>
+</span><span data-line="189">        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">expires</span><span class="o">=</span><span class="n">parse_expires</span><span class="p">(</span><span class="n">expires</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()))</span></div>
+
+</span><span data-line="190">
+</span><span data-line="191">    <span class="k">def</span><span class="w"> </span><span class="nf">_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">changes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span data-line="192">        <span class="c1"># The store has no compare-and-set: the record is read just before the write (the</span>
+</span><span data-line="193">        <span class="c1"># slow hashing is done by the caller) so a revoke that landed meanwhile is not</span>
+</span><span data-line="194">        <span class="c1"># undone. Hosts with several workers writing the</span>
+</span><span data-line="195">        <span class="c1"># same link still need to serialise writes per token.</span>
+</span><span data-line="196">        <span class="n">rec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_unrevoked</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+</span><span data-line="197">        <span class="k">if</span> <span class="n">rec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="198">            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+</span><span data-line="199">        <span class="n">rec</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">changes</span><span class="p">)</span>
+</span><span data-line="200">        <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">token</span><span class="p">]</span> <span class="o">=</span> <span class="n">rec</span>
+</span><span data-line="201">        <span class="k">return</span> <span class="n">public_record</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span>
+</span><span data-line="202">
+</span><span data-line="203">    <span class="k">def</span><span class="w"> </span><span class="nf">_unrevoked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="204">        <span class="n">rec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+</span><span data-line="205">        <span class="k">return</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">rec</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"revoked"</span><span class="p">)</span> <span class="k">else</span> <span class="n">rec</span>
+</span><span data-line="206">
+</span><span data-line="207">    <span class="k">def</span><span class="w"> </span><span class="nf">_hash_password</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="208">        <span class="k">if</span> <span class="n">password</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="209">            <span class="k">return</span> <span class="kc">None</span>
+</span><span data-line="210">        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">password</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_password_len</span><span class="p">:</span>
+</span><span data-line="211">            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+</span><span data-line="212">                <span class="sa">f</span><span class="s2">"a link password needs at least </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">min_password_len</span><span class="si">}</span><span class="s2"> characters "</span>
+</span><span data-line="213">                <span class="s2">"(anyone can try it); omit it for no password"</span>
+</span><span data-line="214">            <span class="p">)</span>
+</span><span data-line="215">        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasher</span><span class="o">.</span><span class="n">hash</span><span class="p">(</span><span class="n">password</span><span class="p">)</span>
+</span><span data-line="216">
 <div class="viewcode-block" id="CapabilityLinks.revoke">
 <a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.revoke">[docs]</a>
-</span><span data-line="172">    <span class="k">def</span><span class="w"> </span><span class="nf">revoke</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-</span><span data-line="173"><span class="w">        </span><span class="sd">"""End a link now (idempotent). The record stays, as a tombstone."""</span>
-</span><span data-line="174">        <span class="n">rec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-</span><span data-line="175">        <span class="k">if</span> <span class="n">rec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span data-line="176">            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-</span><span data-line="177">        <span class="k">if</span> <span class="ow">not</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"revoked"</span><span class="p">):</span>
-</span><span data-line="178">            <span class="n">rec</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">rec</span><span class="p">,</span> <span class="s2">"revoked"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span> <span class="s2">"password"</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
-</span><span data-line="179">            <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">token</span><span class="p">]</span> <span class="o">=</span> <span class="n">rec</span>  <span class="c1"># no hash left: nothing to guess, no session lives</span>
-</span><span data-line="180">        <span class="k">return</span> <span class="n">public_record</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span></div>
-
-</span><span data-line="181">
-</span><span data-line="182">    <span class="c1"># -- the password gate --</span>
-</span><span data-line="183">
-<div class="viewcode-block" id="CapabilityLinks.check_password">
-<a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.check_password">[docs]</a>
-</span><span data-line="184">    <span class="k">def</span><span class="w"> </span><span class="nf">check_password</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span data-line="185"><span class="w">        </span><span class="sd">"""Whether ``password`` opens ``record`` (constant time inside the hasher)."""</span>
-</span><span data-line="186">        <span class="n">hashed</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"password"</span><span class="p">)</span>
-</span><span data-line="187">        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">hashed</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasher</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="n">hashed</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span></div>
-
-</span><span data-line="188">
-<div class="viewcode-block" id="CapabilityLinks.unlock_value">
-<a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.unlock_value">[docs]</a>
-</span><span data-line="189">    <span class="k">def</span><span class="w"> </span><span class="nf">unlock_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span data-line="190"><span class="w">        </span><span class="sd">"""What a correct password earns, to send back on later requests: ``&lt;epoch&gt;.&lt;mac&gt;``."""</span>
-</span><span data-line="191">        <span class="n">issued</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span><span class="o">.</span><span class="n">timestamp</span><span class="p">())</span>
-</span><span data-line="192">        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">issued</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">_unlock_mac</span><span class="p">(</span><span class="n">record</span><span class="p">,</span><span class="w"> </span><span class="n">issued</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span></div>
-
-</span><span data-line="193">
-<div class="viewcode-block" id="CapabilityLinks.unlocked">
-<a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.unlocked">[docs]</a>
-</span><span data-line="194">    <span class="k">def</span><span class="w"> </span><span class="nf">unlocked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_age_s</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span data-line="195"><span class="w">        </span><span class="sd">"""Whether ``value`` is a live unlock of ``record`` (no password: always).</span>
-</span><span data-line="196">
-</span><span data-line="197"><span class="sd">        A revoked record is never unlocked, whatever the caller checked before.</span>
-</span><span data-line="198"><span class="sd">        """</span>
-</span><span data-line="199">        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"revoked"</span><span class="p">):</span>
-</span><span data-line="200">            <span class="k">return</span> <span class="kc">False</span>
-</span><span data-line="201">        <span class="k">if</span> <span class="ow">not</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"password"</span><span class="p">):</span>
-</span><span data-line="202">            <span class="k">return</span> <span class="kc">True</span>
-</span><span data-line="203">        <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span> <span class="ow">or</span> <span class="s2">"."</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
-</span><span data-line="204">            <span class="k">return</span> <span class="kc">False</span>
-</span><span data-line="205">        <span class="n">issued_s</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mac</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
-</span><span data-line="206">        <span class="k">try</span><span class="p">:</span>
-</span><span data-line="207">            <span class="n">issued</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">issued_s</span><span class="p">)</span>
-</span><span data-line="208">        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-</span><span data-line="209">            <span class="k">return</span> <span class="kc">False</span>
-</span><span data-line="210">        <span class="n">now</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span><span class="o">.</span><span class="n">timestamp</span><span class="p">())</span>
-</span><span data-line="211">        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">max_age_s</span> <span class="o">&lt;=</span> <span class="n">issued</span> <span class="o">&lt;=</span> <span class="n">now</span> <span class="o">+</span> <span class="n">_UNLOCK_SKEW_S</span><span class="p">):</span>
-</span><span data-line="212">            <span class="k">return</span> <span class="kc">False</span>
-</span><span data-line="213">        <span class="n">expected</span> <span class="o">=</span> <span class="n">_unlock_mac</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">issued</span><span class="p">)</span>
-</span><span data-line="214">        <span class="k">return</span> <span class="n">hmac</span><span class="o">.</span><span class="n">compare_digest</span><span class="p">(</span><span class="n">mac</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">),</span> <span class="n">expected</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">))</span></div>
-
-</span><span data-line="215">
-<div class="viewcode-block" id="CapabilityLinks.unlock_max_age">
-<a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.unlock_max_age">[docs]</a>
-</span><span data-line="216">    <span class="k">def</span><span class="w"> </span><span class="nf">unlock_max_age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_age_s</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-</span><span data-line="217"><span class="w">        </span><span class="sd">"""How long an unlock should last, in seconds: ``max_age_s``, never past expiry."""</span>
-</span><span data-line="218">        <span class="k">try</span><span class="p">:</span>
-</span><span data-line="219">            <span class="n">ends</span> <span class="o">=</span> <span class="n">expires_at</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
-</span><span data-line="220">        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-</span><span data-line="221">            <span class="k">return</span> <span class="mi">1</span>
-</span><span data-line="222">        <span class="k">if</span> <span class="n">ends</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-</span><span data-line="223">            <span class="k">return</span> <span class="n">max_age_s</span>
-</span><span data-line="224">        <span class="n">left</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">ends</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">())</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
-</span><span data-line="225">        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_age_s</span><span class="p">,</span> <span class="n">left</span><span class="p">))</span></div>
-</div>
+</span><span data-line="217">    <span class="k">def</span><span class="w"> </span><span class="nf">revoke</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+</span><span data-line="218"><span class="w">        </span><span class="sd">"""End a link now (idempotent). The record stays, as a tombstone."""</span>
+</span><span data-line="219">        <span class="n">rec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+</span><span data-line="220">        <span class="k">if</span> <span class="n">rec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="221">            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+</span><span data-line="222">        <span class="k">if</span> <span class="ow">not</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"revoked"</span><span class="p">):</span>
+</span><span data-line="223">            <span class="n">rec</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">rec</span><span class="p">,</span> <span class="s2">"revoked"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span> <span class="s2">"password"</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+</span><span data-line="224">            <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">token</span><span class="p">]</span> <span class="o">=</span> <span class="n">rec</span>  <span class="c1"># no hash left: nothing to guess, no session lives</span>
+</span><span data-line="225">        <span class="k">return</span> <span class="n">public_record</span><span class="p">(</span><span class="n">rec</span><span class="p">)</span></div>
 
 </span><span data-line="226">
-</span><span data-line="227">
-</span><span data-line="228"><span class="k">def</span><span class="w"> </span><span class="nf">_well_formed</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span data-line="229"><span class="w">    </span><span class="sd">"""The generic fields have the types every method relies on."""</span>
-</span><span data-line="230">    <span class="n">optional_str</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>  <span class="c1"># noqa: E731</span>
-</span><span data-line="231">    <span class="k">return</span> <span class="p">(</span>
-</span><span data-line="232">        <span class="nb">isinstance</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
-</span><span data-line="233">        <span class="ow">and</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"token"</span><span class="p">)</span> <span class="o">==</span> <span class="n">token</span>
-</span><span data-line="234">        <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"created"</span><span class="p">),</span> <span class="nb">str</span><span class="p">)</span>
-</span><span data-line="235">        <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">optional_str</span><span class="p">(</span><span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"expires"</span><span class="p">,</span> <span class="s2">"password"</span><span class="p">,</span> <span class="s2">"revoked"</span><span class="p">))</span>
-</span><span data-line="236">    <span class="p">)</span>
-</span><span data-line="237">
+</span><span data-line="227">    <span class="c1"># -- the password gate --</span>
+</span><span data-line="228">
+<div class="viewcode-block" id="CapabilityLinks.check_password">
+<a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.check_password">[docs]</a>
+</span><span data-line="229">    <span class="k">def</span><span class="w"> </span><span class="nf">check_password</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span data-line="230"><span class="w">        </span><span class="sd">"""Whether ``password`` opens ``record`` (constant time inside the hasher)."""</span>
+</span><span data-line="231">        <span class="n">hashed</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"password"</span><span class="p">)</span>
+</span><span data-line="232">        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">hashed</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">hasher</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="n">hashed</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span></div>
+
+</span><span data-line="233">
+<div class="viewcode-block" id="CapabilityLinks.unlock_value">
+<a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.unlock_value">[docs]</a>
+</span><span data-line="234">    <span class="k">def</span><span class="w"> </span><span class="nf">unlock_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span data-line="235"><span class="w">        </span><span class="sd">"""What a correct password earns, to send back on later requests: ``&lt;epoch&gt;.&lt;mac&gt;``."""</span>
+</span><span data-line="236">        <span class="n">issued</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span><span class="o">.</span><span class="n">timestamp</span><span class="p">())</span>
+</span><span data-line="237">        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">issued</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">_unlock_mac</span><span class="p">(</span><span class="n">record</span><span class="p">,</span><span class="w"> </span><span class="n">issued</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span></div>
+
 </span><span data-line="238">
-</span><span data-line="239"><span class="k">def</span><span class="w"> </span><span class="nf">_unlock_mac</span><span class="p">(</span><span class="n">record</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">issued</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span data-line="240">    <span class="c1"># Keyed by the password hash: it holds a random salt and never leaves the server, and</span>
-</span><span data-line="241">    <span class="c1"># a new password (or a revoke, which clears it) invalidates every unlock at once.</span>
-</span><span data-line="242">    <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"password"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
-</span><span data-line="243">    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">record</span><span class="p">[</span><span class="s1">'token'</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">issued</span><span class="si">}</span><span class="s2">"</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">)</span>
-</span><span data-line="244">    <span class="k">return</span> <span class="n">hmac</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+<div class="viewcode-block" id="CapabilityLinks.unlocked">
+<a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.unlocked">[docs]</a>
+</span><span data-line="239">    <span class="k">def</span><span class="w"> </span><span class="nf">unlocked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_age_s</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span data-line="240"><span class="w">        </span><span class="sd">"""Whether ``value`` is a live unlock of ``record`` (no password: always).</span>
+</span><span data-line="241">
+</span><span data-line="242"><span class="sd">        A revoked record is never unlocked, whatever the caller checked before.</span>
+</span><span data-line="243"><span class="sd">        """</span>
+</span><span data-line="244">        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"revoked"</span><span class="p">):</span>
+</span><span data-line="245">            <span class="k">return</span> <span class="kc">False</span>
+</span><span data-line="246">        <span class="k">if</span> <span class="ow">not</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"password"</span><span class="p">):</span>
+</span><span data-line="247">            <span class="k">return</span> <span class="kc">True</span>
+</span><span data-line="248">        <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span> <span class="ow">or</span> <span class="s2">"."</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+</span><span data-line="249">            <span class="k">return</span> <span class="kc">False</span>
+</span><span data-line="250">        <span class="n">issued_s</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">mac</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
+</span><span data-line="251">        <span class="k">try</span><span class="p">:</span>
+</span><span data-line="252">            <span class="n">issued</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">issued_s</span><span class="p">)</span>
+</span><span data-line="253">        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span data-line="254">            <span class="k">return</span> <span class="kc">False</span>
+</span><span data-line="255">        <span class="n">now</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span><span class="o">.</span><span class="n">timestamp</span><span class="p">())</span>
+</span><span data-line="256">        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">max_age_s</span> <span class="o">&lt;=</span> <span class="n">issued</span> <span class="o">&lt;=</span> <span class="n">now</span> <span class="o">+</span> <span class="n">_UNLOCK_SKEW_S</span><span class="p">):</span>
+</span><span data-line="257">            <span class="k">return</span> <span class="kc">False</span>
+</span><span data-line="258">        <span class="n">expected</span> <span class="o">=</span> <span class="n">_unlock_mac</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">issued</span><span class="p">)</span>
+</span><span data-line="259">        <span class="k">return</span> <span class="n">hmac</span><span class="o">.</span><span class="n">compare_digest</span><span class="p">(</span><span class="n">mac</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">),</span> <span class="n">expected</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">))</span></div>
+
+</span><span data-line="260">
+<div class="viewcode-block" id="CapabilityLinks.unlock_max_age">
+<a class="viewcode-back" href="../../_autosummary/caplinks.links.html#caplinks.CapabilityLinks.unlock_max_age">[docs]</a>
+</span><span data-line="261">    <span class="k">def</span><span class="w"> </span><span class="nf">unlock_max_age</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">max_age_s</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span data-line="262"><span class="w">        </span><span class="sd">"""How long an unlock should last, in seconds: ``max_age_s``, never past expiry."""</span>
+</span><span data-line="263">        <span class="k">try</span><span class="p">:</span>
+</span><span data-line="264">            <span class="n">ends</span> <span class="o">=</span> <span class="n">expires_at</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+</span><span data-line="265">        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span data-line="266">            <span class="k">return</span> <span class="mi">1</span>
+</span><span data-line="267">        <span class="k">if</span> <span class="n">ends</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+</span><span data-line="268">            <span class="k">return</span> <span class="n">max_age_s</span>
+</span><span data-line="269">        <span class="n">left</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">ends</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">())</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
+</span><span data-line="270">        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">max_age_s</span><span class="p">,</span> <span class="n">left</span><span class="p">))</span></div>
+</div>
+
+</span><span data-line="271">
+</span><span data-line="272">
+</span><span data-line="273"><span class="k">def</span><span class="w"> </span><span class="nf">_well_formed</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span data-line="274"><span class="w">    </span><span class="sd">"""The generic fields have the types every method relies on."""</span>
+</span><span data-line="275">    <span class="n">optional_str</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>  <span class="c1"># noqa: E731</span>
+</span><span data-line="276">    <span class="k">return</span> <span class="p">(</span>
+</span><span data-line="277">        <span class="nb">isinstance</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+</span><span data-line="278">        <span class="ow">and</span> <span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"token"</span><span class="p">)</span> <span class="o">==</span> <span class="n">token</span>
+</span><span data-line="279">        <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"created"</span><span class="p">),</span> <span class="nb">str</span><span class="p">)</span>
+</span><span data-line="280">        <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">optional_str</span><span class="p">(</span><span class="n">rec</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"expires"</span><span class="p">,</span> <span class="s2">"password"</span><span class="p">,</span> <span class="s2">"revoked"</span><span class="p">))</span>
+</span><span data-line="281">    <span class="p">)</span>
+</span><span data-line="282">
+</span><span data-line="283">
+</span><span data-line="284"><span class="k">def</span><span class="w"> </span><span class="nf">_unlock_mac</span><span class="p">(</span><span class="n">record</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">issued</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span data-line="285">    <span class="c1"># Keyed by the password hash: it holds a random salt and never leaves the server, and</span>
+</span><span data-line="286">    <span class="c1"># a new password (or a revoke, which clears it) invalidates every unlock at once.</span>
+</span><span data-line="287">    <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"password"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+</span><span data-line="288">    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">record</span><span class="p">[</span><span class="s1">'token'</span><span class="p">]</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">issued</span><span class="si">}</span><span class="s2">"</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">)</span>
+</span><span data-line="289">    <span class="k">return</span> <span class="n">hmac</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
 </span></pre></div>
         </article><button class="back-to-top" type="button">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -426,7 +477,7 @@ data-aria-dark="Switch to auto color mode">
     </div>
   </div>
 </footer>
-      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/documentation_options.js?v=e3a6060d"></script>
       <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>

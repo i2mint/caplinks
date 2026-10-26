@@ -1,4 +1,4 @@
-> built 2026-10-23 03:07 UTC from 4210b3b (main) · caplinks 0.0.1. Details: build_info.json
+> built 2026-10-26 09:25 UTC from b0f350e (main) · caplinks 0.0.2. Details: build_info.json
 
 # index.html.md
 
@@ -29,6 +29,7 @@ links.revoke(rec["token"])                   # now "missing"
 ## What is in it
 
 - `CapabilityLinks`: create, read, list and revoke links, and gate them on a password. Records are plain dicts in any `MutableMapping` keyed by token: the generic fields are `token`, `created`, `expires`, `password` (a hash) and `revoked`; your own fields (what the link reaches) sit beside them.
+- Gating an id you already have: `create(..., token=existing_id)` keeps the id; `set_password(token, pw_or_None)` and `set_expires(token, when)` change a live link later (a new password ends every open unlock).
 - `ScryptHasher` (stdlib scrypt) behind the `PasswordHasher` protocol (`hash`, `verify -> bool`): pass `hasher=` for argon2 or anything else.
 - `parse_expires` reads what people write (`30m`, `12h`, `7d`, `2w`, `2026-11-01` meaning the end of that day UTC, an ISO timestamp, `never`) and refuses the past; `is_expired` fails closed.
 - `SlidingWindowLimiter` behind the `RateLimiter` protocol (`allow(key) -> bool`): count password attempts per client, per link, or both. It is per process; a shared limiter of the same shape (Redis, say) fits where several workers serve the links.
@@ -195,12 +196,15 @@ Whether `password` opens `record` (constant time inside the hasher).
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
-#### create(fields=None, , password=None, expires='7d')
+#### create(fields=None, , password=None, expires='7d', token=None)
 
 Make a link carrying the host’s `fields`; return its record without the hash.
 
 `expires` is anything [`caplinks.expiry.parse_expires()`](_autosummary/caplinks.expiry.html.md#caplinks.expiry.parse_expires) reads, 7 days by
-default (`"never"` for none); `password` gates the link.
+default (`"never"` for none); `password` gates the link. `token` gates an
+id that already exists (a host whose links must not change): it must look like
+a token ([`check_token()`](_autosummary/caplinks.html.md#caplinks.check_token)) and be unused; leave it out for a fresh one. The
+caller then owns the id’s randomness: use 128 random bits, as [`new_token()`](_autosummary/caplinks.html.md#caplinks.new_token).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -225,6 +229,25 @@ A copy of the stored record (hash included), revoked or not; `None` if none.
 #### revoke(token)
 
 End a link now (idempotent). The record stays, as a tombstone.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### set_expires(token, expires)
+
+Move an unrevoked link’s expiry (anything [`parse_expires()`](_autosummary/caplinks.html.md#caplinks.parse_expires) reads;
+`"never"` for none). An expired link may be given a later one; a revoked link
+stays revoked (`KeyError`).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### set_password(token, password)
+
+Give an unrevoked link a new password, or `None` to open it.
+
+A new password ends every open unlock at once. A revoked link stays revoked
+(`KeyError`).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -505,12 +528,15 @@ Whether `password` opens `record` (constant time inside the hasher).
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
-#### create(fields=None, , password=None, expires='7d')
+#### create(fields=None, , password=None, expires='7d', token=None)
 
 Make a link carrying the host’s `fields`; return its record without the hash.
 
 `expires` is anything [`caplinks.expiry.parse_expires()`](_autosummary/caplinks.expiry.html.md#caplinks.expiry.parse_expires) reads, 7 days by
-default (`"never"` for none); `password` gates the link.
+default (`"never"` for none); `password` gates the link. `token` gates an
+id that already exists (a host whose links must not change): it must look like
+a token ([`check_token()`](_autosummary/caplinks.links.html.md#caplinks.links.check_token)) and be unused; leave it out for a fresh one. The
+caller then owns the id’s randomness: use 128 random bits, as [`new_token()`](_autosummary/caplinks.links.html.md#caplinks.links.new_token).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -535,6 +561,25 @@ A copy of the stored record (hash included), revoked or not; `None` if none.
 #### revoke(token)
 
 End a link now (idempotent). The record stays, as a tombstone.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### set_expires(token, expires)
+
+Move an unrevoked link’s expiry (anything `parse_expires()` reads;
+`"never"` for none). An expired link may be given a later one; a revoked link
+stays revoked (`KeyError`).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+#### set_password(token, password)
+
+Give an unrevoked link a new password, or `None` to open it.
+
+A new password ends every open unlock at once. A revoked link stays revoked
+(`KeyError`).
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -657,18 +702,18 @@ attempt limit ([`caplinks.limits`](_autosummary/caplinks.limits.html.md#module-c
 
 # About this build
 
-This documentation was built on **2026-10-23 03:07 UTC** from commit <a href="https://github.com/i2mint/caplinks/commit/4210b3ba528e78381f7eec6c6c7c379dd1ca8e16"><code>4210b3b</code></a> on branch <code>main</code>, for **caplinks 0.0.1** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 09:25 UTC** from commit <a href="https://github.com/i2mint/caplinks/commit/b0f350e59218304ce616cc5a9c407b01c7f617ff"><code>b0f350e</code></a> on branch <code>main</code>, for **caplinks 0.0.2** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.1) is behind the latest release on PyPI (0.0.2): `pip install caplinks` gives newer code than these docs describe.
+- The documented version (0.0.2) is behind the latest release on PyPI (0.0.3): `pip install caplinks` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                        |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/caplinks/commit/4210b3ba528e78381f7eec6c6c7c379dd1ca8e16"><code>4210b3ba528e78381f7eec6c6c7c379dd1ca8e16</code></a> |
+| Commit              | <a href="https://github.com/i2mint/caplinks/commit/b0f350e59218304ce616cc5a9c407b01c7f617ff"><code>b0f350e59218304ce616cc5a9c407b01c7f617ff</code></a> |
 | Branch              | <code>main</code>                                                                                                                                      |
 | Tags at this commit | none                                                                                                                                                   |
 | Working tree        | clean                                                                                                                                                  |
@@ -679,9 +724,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/caplinks</code>                                                               |
-| Run          | <a href="https://github.com/i2mint/caplinks/actions/runs/39893158036">39893158036</a>      |
+| Run          | <a href="https://github.com/i2mint/caplinks/actions/runs/40299191779">40299191779</a>      |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>4210b3ba528e78381f7eec6c6c7c379dd1ca8e16</code> (in the history of the built commit) |
+| Event commit | <code>b0f350e59218304ce616cc5a9c407b01c7f617ff</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -706,13 +751,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/caplinks/0.0.2/">0.0.2</a>, newer than the documented version (0.0.1).
+Latest release: <a href="https://pypi.org/project/caplinks/0.0.3/">0.0.3</a>, newer than the documented version (0.0.2).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/caplinks && cd caplinks
-git checkout 4210b3ba528e78381f7eec6c6c7c379dd1ca8e16
+git checkout b0f350e59218304ce616cc5a9c407b01c7f617ff
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

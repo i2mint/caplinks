@@ -12,7 +12,7 @@
 - [caplinks.limits](_autosummary/caplinks.limits.html.md): Limiting password attempts: the &#96;allow(key) -&gt; bool&#96; protocol and an in-memory default.
 - [caplinks.links](_autosummary/caplinks.links.html.md): Capability links: a record behind an unguessable token, with an optional password gate.
 - [caplinks.passwords](_autosummary/caplinks.passwords.html.md): Password hashing for a link’s password gate: a protocol and a stdlib default.
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-23 03:07 UTC&#42;&#42; from commit &lt;a href="https://github.com/i2m...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-26 09:25 UTC&#42;&#42; from commit &lt;a href="https://github.com/i2m...
 
 ## Optional
 

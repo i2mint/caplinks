@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-23T03:07:31Z",
+  "built_at": "2026-10-26T09:25:02Z",
   "package": {
     "name": "caplinks",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "display_name": "caplinks",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "4210b3ba528e78381f7eec6c6c7c379dd1ca8e16",
-    "short_commit": "4210b3b",
+    "commit": "b0f350e59218304ce616cc5a9c407b01c7f617ff",
+    "short_commit": "b0f350e",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/caplinks",
-    "commit_url": "https://github.com/i2mint/caplinks/commit/4210b3ba528e78381f7eec6c6c7c379dd1ca8e16",
+    "commit_url": "https://github.com/i2mint/caplinks/commit/b0f350e59218304ce616cc5a9c407b01c7f617ff",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/caplinks",
-    "sha": "4210b3ba528e78381f7eec6c6c7c379dd1ca8e16",
+    "sha": "b0f350e59218304ce616cc5a9c407b01c7f617ff",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "39893158036",
-    "run_url": "https://github.com/i2mint/caplinks/actions/runs/39893158036",
+    "run_id": "40299191779",
+    "run_url": "https://github.com/i2mint/caplinks/actions/runs/40299191779",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -56,20 +56,20 @@
   },
   "site": {
     "modules_documented": 5,
-    "objects_documented": 48
+    "objects_documented": 52
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.2",
+    "latest": "0.0.3",
     "relation": "behind",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/caplinks && cd caplinks\ngit checkout 4210b3ba528e78381f7eec6c6c7c379dd1ca8e16\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/caplinks && cd caplinks\ngit checkout b0f350e59218304ce616cc5a9c407b01c7f617ff\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": false,
     "notes": [
-      "The documented version (0.0.1) is behind the latest release on PyPI (0.0.2): `pip install caplinks` gives newer code than these docs describe."
+      "The documented version (0.0.2) is behind the latest release on PyPI (0.0.3): `pip install caplinks` gives newer code than these docs describe."
     ]
   }
 }

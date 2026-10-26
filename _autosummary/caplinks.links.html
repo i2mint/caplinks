@@ -92,6 +92,8 @@ data-aria-dark="Switch to auto color mode">
 <li><a class="reference internal" href="#caplinks.links.CapabilityLinks.list"><code class="docutils literal notranslate"><span class="pre">CapabilityLinks.list()</span></code></a></li>
 <li><a class="reference internal" href="#caplinks.links.CapabilityLinks.record"><code class="docutils literal notranslate"><span class="pre">CapabilityLinks.record()</span></code></a></li>
 <li><a class="reference internal" href="#caplinks.links.CapabilityLinks.revoke"><code class="docutils literal notranslate"><span class="pre">CapabilityLinks.revoke()</span></code></a></li>
+<li><a class="reference internal" href="#caplinks.links.CapabilityLinks.set_expires"><code class="docutils literal notranslate"><span class="pre">CapabilityLinks.set_expires()</span></code></a></li>
+<li><a class="reference internal" href="#caplinks.links.CapabilityLinks.set_password"><code class="docutils literal notranslate"><span class="pre">CapabilityLinks.set_password()</span></code></a></li>
 <li><a class="reference internal" href="#caplinks.links.CapabilityLinks.status"><code class="docutils literal notranslate"><span class="pre">CapabilityLinks.status()</span></code></a></li>
 <li><a class="reference internal" href="#caplinks.links.CapabilityLinks.unlock_max_age"><code class="docutils literal notranslate"><span class="pre">CapabilityLinks.unlock_max_age()</span></code></a></li>
 <li><a class="reference internal" href="#caplinks.links.CapabilityLinks.unlock_value"><code class="docutils literal notranslate"><span class="pre">CapabilityLinks.unlock_value()</span></code></a></li>
@@ -233,10 +235,13 @@ hashes link passwords (stdlib scrypt by default); <code class="docutils literal 
 
 <dl class="py method">
 <dt class="sig sig-object py" id="caplinks.links.CapabilityLinks.create">
-<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expires</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'7d'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/caplinks/links.html#CapabilityLinks.create"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caplinks.links.CapabilityLinks.create" title="Link to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expires</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'7d'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/caplinks/links.html#CapabilityLinks.create"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caplinks.links.CapabilityLinks.create" title="Link to this definition">#</a></dt>
 <dd><p>Make a link carrying the host’s <code class="docutils literal notranslate"><span class="pre">fields</span></code>; return its record without the hash.</p>
 <p><code class="docutils literal notranslate"><span class="pre">expires</span></code> is anything <a class="reference internal" href="caplinks.expiry.html#caplinks.expiry.parse_expires" title="caplinks.expiry.parse_expires"><code class="xref py py-func docutils literal notranslate"><span class="pre">caplinks.expiry.parse_expires()</span></code></a> reads, 7 days by
-default (<code class="docutils literal notranslate"><span class="pre">&quot;never&quot;</span></code> for none); <code class="docutils literal notranslate"><span class="pre">password</span></code> gates the link.</p>
+default (<code class="docutils literal notranslate"><span class="pre">&quot;never&quot;</span></code> for none); <code class="docutils literal notranslate"><span class="pre">password</span></code> gates the link. <code class="docutils literal notranslate"><span class="pre">token</span></code> gates an
+id that already exists (a host whose links must not change): it must look like
+a token (<a class="reference internal" href="#caplinks.links.check_token" title="caplinks.links.check_token"><code class="xref py py-func docutils literal notranslate"><span class="pre">check_token()</span></code></a>) and be unused; leave it out for a fresh one. The
+caller then owns the id’s randomness: use 128 random bits, as <a class="reference internal" href="#caplinks.links.new_token" title="caplinks.links.new_token"><code class="xref py py-func docutils literal notranslate"><span class="pre">new_token()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
@@ -272,6 +277,32 @@ revoked and expired ones.</p>
 <dt class="sig sig-object py" id="caplinks.links.CapabilityLinks.revoke">
 <span class="sig-name descname"><span class="pre">revoke</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/caplinks/links.html#CapabilityLinks.revoke"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caplinks.links.CapabilityLinks.revoke" title="Link to this definition">#</a></dt>
 <dd><p>End a link now (idempotent). The record stays, as a tombstone.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caplinks.links.CapabilityLinks.set_expires">
+<span class="sig-name descname"><span class="pre">set_expires</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expires</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/caplinks/links.html#CapabilityLinks.set_expires"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caplinks.links.CapabilityLinks.set_expires" title="Link to this definition">#</a></dt>
+<dd><p>Move an unrevoked link’s expiry (anything <code class="xref py py-func docutils literal notranslate"><span class="pre">parse_expires()</span></code> reads;
+<code class="docutils literal notranslate"><span class="pre">&quot;never&quot;</span></code> for none). An expired link may be given a later one; a revoked link
+stays revoked (<code class="docutils literal notranslate"><span class="pre">KeyError</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caplinks.links.CapabilityLinks.set_password">
+<span class="sig-name descname"><span class="pre">set_password</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/caplinks/links.html#CapabilityLinks.set_password"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caplinks.links.CapabilityLinks.set_password" title="Link to this definition">#</a></dt>
+<dd><p>Give an unrevoked link a new password, or <code class="docutils literal notranslate"><span class="pre">None</span></code> to open it.</p>
+<p>A new password ends every open unlock at once. A revoked link stays revoked
+(<code class="docutils literal notranslate"><span class="pre">KeyError</span></code>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
@@ -425,7 +456,7 @@ revoked and expired ones.</p>
     </div>
   </div>
 </footer>
-      <script src="../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../_static/documentation_options.js?v=e3a6060d"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
