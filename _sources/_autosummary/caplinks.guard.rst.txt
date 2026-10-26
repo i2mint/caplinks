@@ -1,0 +1,19 @@
+caplinks.guard
+==============
+
+.. automodule:: caplinks.guard
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_MAX_ATTEMPTS
+      DFLT_MAX_LINK_FAILURES
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AttemptGuard
+   

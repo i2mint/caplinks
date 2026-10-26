@@ -67,9 +67,11 @@ data-aria-dark="Switch to auto color mode">
 <li class="toctree-l1"><a class="reference internal" href="api.html">API reference</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/caplinks.html">caplinks</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/caplinks.expiry.html">caplinks.expiry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/caplinks.guard.html">caplinks.guard</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/caplinks.limits.html">caplinks.limits</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/caplinks.links.html">caplinks.links</a></li>
 <li class="toctree-l3"><a class="reference internal" href="_autosummary/caplinks.passwords.html">caplinks.passwords</a></li>
+<li class="toctree-l3"><a class="reference internal" href="_autosummary/caplinks.records.html">caplinks.records</a></li>
 </ul>
 </li>
 </ul>
@@ -140,6 +142,8 @@ data-aria-dark="Switch to auto color mode">
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">CapabilityLinks</span></code>: create, read, list and revoke links, and gate them on a password. Records are plain dicts in any <code class="docutils literal notranslate"><span class="pre">MutableMapping</span></code> keyed by token: the generic fields are <code class="docutils literal notranslate"><span class="pre">token</span></code>, <code class="docutils literal notranslate"><span class="pre">created</span></code>, <code class="docutils literal notranslate"><span class="pre">expires</span></code>, <code class="docutils literal notranslate"><span class="pre">password</span></code> (a hash) and <code class="docutils literal notranslate"><span class="pre">revoked</span></code>; your own fields (what the link reaches) sit beside them.</p></li>
 <li><p>Gating an id you already have: <code class="docutils literal notranslate"><span class="pre">create(...,</span> <span class="pre">token=existing_id)</span></code> keeps the id; <code class="docutils literal notranslate"><span class="pre">set_password(token,</span> <span class="pre">pw_or_None)</span></code> and <code class="docutils literal notranslate"><span class="pre">set_expires(token,</span> <span class="pre">when)</span></code> change a live link later (a new password ends every open unlock).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AttemptGuard</span></code>: the per-link lock-out. <code class="docutils literal notranslate"><span class="pre">allow(link,</span> <span class="pre">client)</span></code> before checking a password, <code class="docutils literal notranslate"><span class="pre">failed(link)</span></code> after a wrong one; one client is limited on its own, and a link that takes too many wrong passwords from everyone is locked for a while.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">JsonRecords(texts)</span></code> and <code class="docutils literal notranslate"><span class="pre">FileTexts(folder)</span></code>: a ready <code class="docutils literal notranslate"><span class="pre">store</span></code> for <code class="docutils literal notranslate"><span class="pre">CapabilityLinks</span></code>, records as <code class="docutils literal notranslate"><span class="pre">&lt;token&gt;.json</span></code> in a text mapping (a local folder: atomic, mode 0600). Pass <code class="docutils literal notranslate"><span class="pre">valid=</span></code> to check your own fields and <code class="docutils literal notranslate"><span class="pre">deletable=False</span></code> to keep revoked links as tombstones.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ScryptHasher</span></code> (stdlib scrypt) behind the <code class="docutils literal notranslate"><span class="pre">PasswordHasher</span></code> protocol (<code class="docutils literal notranslate"><span class="pre">hash</span></code>, <code class="docutils literal notranslate"><span class="pre">verify</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code>): pass <code class="docutils literal notranslate"><span class="pre">hasher=</span></code> for argon2 or anything else.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">parse_expires</span></code> reads what people write (<code class="docutils literal notranslate"><span class="pre">30m</span></code>, <code class="docutils literal notranslate"><span class="pre">12h</span></code>, <code class="docutils literal notranslate"><span class="pre">7d</span></code>, <code class="docutils literal notranslate"><span class="pre">2w</span></code>, <code class="docutils literal notranslate"><span class="pre">2026-11-01</span></code> meaning the end of that day UTC, an ISO timestamp, <code class="docutils literal notranslate"><span class="pre">never</span></code>) and refuses the past; <code class="docutils literal notranslate"><span class="pre">is_expired</span></code> fails closed.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">SlidingWindowLimiter</span></code> behind the <code class="docutils literal notranslate"><span class="pre">RateLimiter</span></code> protocol (<code class="docutils literal notranslate"><span class="pre">allow(key)</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code>): count password attempts per client, per link, or both. It is per process; a shared limiter of the same shape (Redis, say) fits where several workers serve the links.</p></li>
@@ -187,7 +191,7 @@ data-aria-dark="Switch to auto color mode">
 </section>
 </section>
 
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-26 09:25 UTC from <a href="https://github.com/i2mint/caplinks/commit/b0f350e59218304ce616cc5a9c407b01c7f617ff">b0f350e</a> (main) · caplinks 0.0.2 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-26 09:42 UTC from <a href="https://github.com/i2mint/caplinks/commit/f433e8662ac7a6e77bb3b74c3ff19670fe749a93">f433e86</a> (main) · caplinks 0.0.3 · <a href="about-this-build.html">about this build</a></p>
         </article><button class="back-to-top" type="button">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
     <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
@@ -222,7 +226,7 @@ data-aria-dark="Switch to auto color mode">
     </div>
   </div>
 </footer>
-      <script src="_static/documentation_options.js?v=e3a6060d"></script>
+      <script src="_static/documentation_options.js?v=47de8214"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="_static/clipboard.min.js?v=a7894cd8"></script>

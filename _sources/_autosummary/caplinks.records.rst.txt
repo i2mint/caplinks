@@ -1,0 +1,13 @@
+caplinks.records
+================
+
+.. automodule:: caplinks.records
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      FileTexts
+      JsonRecords
+   

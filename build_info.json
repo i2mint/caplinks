@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-26T09:25:02Z",
+  "built_at": "2026-10-26T09:42:07Z",
   "package": {
     "name": "caplinks",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "display_name": "caplinks",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "b0f350e59218304ce616cc5a9c407b01c7f617ff",
-    "short_commit": "b0f350e",
+    "commit": "f433e8662ac7a6e77bb3b74c3ff19670fe749a93",
+    "short_commit": "f433e86",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/caplinks",
-    "commit_url": "https://github.com/i2mint/caplinks/commit/b0f350e59218304ce616cc5a9c407b01c7f617ff",
+    "commit_url": "https://github.com/i2mint/caplinks/commit/f433e8662ac7a6e77bb3b74c3ff19670fe749a93",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/caplinks",
-    "sha": "b0f350e59218304ce616cc5a9c407b01c7f617ff",
+    "sha": "f433e8662ac7a6e77bb3b74c3ff19670fe749a93",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "40299191779",
-    "run_url": "https://github.com/i2mint/caplinks/actions/runs/40299191779",
+    "run_id": "40301421879",
+    "run_url": "https://github.com/i2mint/caplinks/actions/runs/40301421879",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -55,21 +55,19 @@
     "docs_dir": "docsrc"
   },
   "site": {
-    "modules_documented": 5,
-    "objects_documented": 52
+    "modules_documented": 7,
+    "objects_documented": 64
   },
   "pypi": {
     "checked": true,
     "latest": "0.0.3",
-    "relation": "behind",
+    "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/caplinks && cd caplinks\ngit checkout b0f350e59218304ce616cc5a9c407b01c7f617ff\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/caplinks && cd caplinks\ngit checkout f433e8662ac7a6e77bb3b74c3ff19670fe749a93\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": false,
-    "notes": [
-      "The documented version (0.0.2) is behind the latest release on PyPI (0.0.3): `pip install caplinks` gives newer code than these docs describe."
-    ]
+    "aligned": true,
+    "notes": []
   }
 }

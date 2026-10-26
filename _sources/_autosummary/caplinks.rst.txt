@@ -19,6 +19,9 @@
 
    .. autosummary::
    
+      AttemptGuard
+      FileTexts
+      JsonRecords
       CapabilityLinks
       PasswordHasher
       RateLimiter
@@ -32,6 +35,8 @@
    :recursive:
 
    expiry
+   guard
    limits
    links
    passwords
+   records

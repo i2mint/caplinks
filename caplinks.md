@@ -1,4 +1,4 @@
-> built 2026-10-26 09:25 UTC from b0f350e (main) · caplinks 0.0.2. Details: build_info.json
+> built 2026-10-26 09:42 UTC from f433e86 (main) · caplinks 0.0.3. Details: build_info.json
 
 # index.html.md
 
@@ -30,6 +30,8 @@ links.revoke(rec["token"])                   # now "missing"
 
 - `CapabilityLinks`: create, read, list and revoke links, and gate them on a password. Records are plain dicts in any `MutableMapping` keyed by token: the generic fields are `token`, `created`, `expires`, `password` (a hash) and `revoked`; your own fields (what the link reaches) sit beside them.
 - Gating an id you already have: `create(..., token=existing_id)` keeps the id; `set_password(token, pw_or_None)` and `set_expires(token, when)` change a live link later (a new password ends every open unlock).
+- `AttemptGuard`: the per-link lock-out. `allow(link, client)` before checking a password, `failed(link)` after a wrong one; one client is limited on its own, and a link that takes too many wrong passwords from everyone is locked for a while.
+- `JsonRecords(texts)` and `FileTexts(folder)`: a ready `store` for `CapabilityLinks`, records as `<token>.json` in a text mapping (a local folder: atomic, mode 0600). Pass `valid=` to check your own fields and `deletable=False` to keep revoked links as tombstones.
 - `ScryptHasher` (stdlib scrypt) behind the `PasswordHasher` protocol (`hash`, `verify -> bool`): pass `hasher=` for argon2 or anything else.
 - `parse_expires` reads what people write (`30m`, `12h`, `7d`, `2w`, `2026-11-01` meaning the end of that day UTC, an ISO timestamp, `never`) and refuses the past; `is_expired` fails closed.
 - `SlidingWindowLimiter` behind the `RateLimiter` protocol (`allow(key) -> bool`): count password attempts per client, per link, or both. It is per process; a shared limiter of the same shape (Redis, say) fits where several workers serve the links.
@@ -138,6 +140,81 @@ True
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 
+# _autosummary/caplinks.guard.html.md
+
+# caplinks.guard
+
+The per-link lock-out: limit password tries, and lock a link that takes too many.
+
+Two counts, because they defend against different things. Tries of one client on one
+link are limited so that a guesser locks out only itself; the wrong passwords a link
+takes from *everyone* are limited too, and past that the link’s unlock is closed for a
+while (a distributed guess). A host calls [`AttemptGuard.allow()`](_autosummary/caplinks.guard.html.md#caplinks.guard.AttemptGuard.allow) before it checks a
+password and [`AttemptGuard.failed()`](_autosummary/caplinks.guard.html.md#caplinks.guard.AttemptGuard.failed) after a wrong one.
+
+```pycon
+>>> t = [0.0]
+>>> guard = AttemptGuard(
+...     client_limiter=SlidingWindowLimiter(max_per_window=5, clock=lambda: t[0]),
+...     link_limiter=SlidingWindowLimiter(max_per_window=1, clock=lambda: t[0]),
+...     lock_s=60, clock=lambda: t[0])
+>>> guard.allow("link", "1.2.3.4")
+True
+>>> guard.failed("link"); guard.failed("link")  # the second one locks the link
+>>> guard.allow("link", "5.6.7.8")
+False
+>>> t[0] = 61.0; guard.allow("link", "5.6.7.8")
+True
+```
+
+### Module Attributes
+
+| [`DFLT_MAX_ATTEMPTS`](_autosummary/caplinks.guard.html.md#caplinks.guard.DFLT_MAX_ATTEMPTS)      | tries one client gets on one link per window                            |
+|-------------------------------------------------------------------------|-------------------------------------------------------------------------|
+| [`DFLT_MAX_LINK_FAILURES`](_autosummary/caplinks.guard.html.md#caplinks.guard.DFLT_MAX_LINK_FAILURES) | wrong passwords one link takes from everyone per window before it locks |
+
+### Classes
+
+| [`AttemptGuard`](_autosummary/caplinks.guard.html.md#caplinks.guard.AttemptGuard)(\*[, client_limiter, ...])   | Decide whether a password try may be made, and lock a link that is being guessed.   |
+|--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+
+### *class* caplinks.guard.AttemptGuard(\*, client_limiter=None, link_limiter=None, lock_s=300.0, clock=<built-in function monotonic>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Decide whether a password try may be made, and lock a link that is being guessed.
+
+`client_limiter` counts every try of one client on one link; `link_limiter`
+counts the wrong passwords a link takes from everyone and, past its limit, locks the
+link for `lock_s` seconds. Both are anything with `allow(key) -> bool` (a Redis
+one shares the count between workers); the lock itself is per process. `clock`
+returns a monotonic time in seconds (tests pin it; the default limiters use it too).
+Keep `lock_s` at least the limiter’s window, or the first failure after a lock ends
+locks the link again at once.
+
+#### allow(link, client)
+
+Whether `client` may try a password on `link` now (counts the try).
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+#### failed(link)
+
+Record a wrong password on `link`; lock the link if it takes too many.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### caplinks.guard.DFLT_MAX_ATTEMPTS *= 10*
+
+tries one client gets on one link per window
+
+### caplinks.guard.DFLT_MAX_LINK_FAILURES *= 100*
+
+wrong passwords one link takes from everyone per window before it locks
+
+
 # _autosummary/caplinks.html.md
 
 # caplinks
@@ -172,12 +249,43 @@ True
 
 ### Classes
 
-| [`CapabilityLinks`](_autosummary/caplinks.html.md#caplinks.CapabilityLinks)([store, hasher, clock, ...])    | Create, read, list and revoke capability links, and gate them on a password.    |
-|--------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| [`PasswordHasher`](_autosummary/caplinks.html.md#caplinks.PasswordHasher)(\*args, \*\*kwargs)              | What a link needs to gate on a password: `verify` returns a bool, never raises. |
-| [`RateLimiter`](_autosummary/caplinks.html.md#caplinks.RateLimiter)(\*args, \*\*kwargs)                 | Decide whether one more attempt keyed by `key` is allowed now.                  |
-| [`ScryptHasher`](_autosummary/caplinks.html.md#caplinks.ScryptHasher)([n, r, p, salt_bytes, dklen])      | Stdlib `hashlib.scrypt`, stored as `scrypt$n$r$p$salt$hash` (base64).           |
-| [`SlidingWindowLimiter`](_autosummary/caplinks.html.md#caplinks.SlidingWindowLimiter)(\*[, max_per_window, ...]) | At most `max_per_window` hits per key per window; in memory, per process.       |
+| [`AttemptGuard`](_autosummary/caplinks.html.md#caplinks.AttemptGuard)(\*[, client_limiter, ...])            | Decide whether a password try may be made, and lock a link that is being guessed.   |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| [`FileTexts`](_autosummary/caplinks.html.md#caplinks.FileTexts)(folder)                                  | `{name: text}` over the files of one local folder (created on first write).         |
+| [`JsonRecords`](_autosummary/caplinks.html.md#caplinks.JsonRecords)(texts, \*[, valid, deletable, indent]) | `{token: dict}` over a mapping of text, `<token>.json` to its JSON.                 |
+| [`CapabilityLinks`](_autosummary/caplinks.html.md#caplinks.CapabilityLinks)([store, hasher, clock, ...])       | Create, read, list and revoke capability links, and gate them on a password.        |
+| [`PasswordHasher`](_autosummary/caplinks.html.md#caplinks.PasswordHasher)(\*args, \*\*kwargs)                 | What a link needs to gate on a password: `verify` returns a bool, never raises.     |
+| [`RateLimiter`](_autosummary/caplinks.html.md#caplinks.RateLimiter)(\*args, \*\*kwargs)                    | Decide whether one more attempt keyed by `key` is allowed now.                      |
+| [`ScryptHasher`](_autosummary/caplinks.html.md#caplinks.ScryptHasher)([n, r, p, salt_bytes, dklen])         | Stdlib `hashlib.scrypt`, stored as `scrypt$n$r$p$salt$hash` (base64).               |
+| [`SlidingWindowLimiter`](_autosummary/caplinks.html.md#caplinks.SlidingWindowLimiter)(\*[, max_per_window, ...])    | At most `max_per_window` hits per key per window; in memory, per process.           |
+
+### *class* caplinks.AttemptGuard(\*, client_limiter=None, link_limiter=None, lock_s=300.0, clock=<built-in function monotonic>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Decide whether a password try may be made, and lock a link that is being guessed.
+
+`client_limiter` counts every try of one client on one link; `link_limiter`
+counts the wrong passwords a link takes from everyone and, past its limit, locks the
+link for `lock_s` seconds. Both are anything with `allow(key) -> bool` (a Redis
+one shares the count between workers); the lock itself is per process. `clock`
+returns a monotonic time in seconds (tests pin it; the default limiters use it too).
+Keep `lock_s` at least the limiter’s window, or the first failure after a lock ends
+locks the link again at once.
+
+#### allow(link, client)
+
+Whether `client` may try a password on `link` now (counts the try).
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+#### failed(link)
+
+Record a wrong password on `link`; lock the link if it takes too many.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### *class* caplinks.CapabilityLinks(store=None, \*, hasher=None, clock=<function now_utc>, min_password_len=8)
 
@@ -281,6 +389,30 @@ A revoked record is never unlocked, whatever the caller checked before.
 
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### *class* caplinks.FileTexts(folder)
+
+Bases: [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)
+
+`{name: text}` over the files of one local folder (created on first write).
+
+Names are plain file names (no path separator, no leading dot, no NUL); a name whose
+file is a symlink out of the folder is missing. The folder is private (mode 0700:
+the names are link tokens) and a write goes to a hidden temporary file (mode 0600)
+that replaces the target, so a reader never sees half a record.
+
+### *class* caplinks.JsonRecords(texts, , valid=None, deletable=True, indent=None)
+
+Bases: [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)
+
+`{token: dict}` over a mapping of text, `<token>.json` to its JSON.
+
+A record that cannot be read, is not a JSON object, or fails `valid` raises
+`KeyError`: the link is then missing (every failure closes the link). `valid`
+takes the host’s own check of its fields. `deletable=False` refuses `del`: a
+host that keeps a revoked link as a tombstone says so. `indent` pretty-prints.
+
+The contract of `texts`: reading a missing name raises `KeyError`.
 
 ### *class* caplinks.PasswordHasher(\*args, \*\*kwargs)
 
@@ -396,9 +528,11 @@ A record without its password hash; `protected` says whether it has one.
 
 | [`expiry`](_autosummary/caplinks.expiry.html.md#module-caplinks.expiry)       | When a link stops working: reading an expiry the way a person writes one.               |
 |--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| [`guard`](_autosummary/caplinks.guard.html.md#module-caplinks.guard)         | The per-link lock-out: limit password tries, and lock a link that takes too many.       |
 | [`limits`](_autosummary/caplinks.limits.html.md#module-caplinks.limits)       | Limiting password attempts: the `allow(key) -> bool` protocol and an in-memory default. |
 | [`links`](_autosummary/caplinks.links.html.md#module-caplinks.links)         | Capability links: a record behind an unguessable token, with an optional password gate. |
 | [`passwords`](_autosummary/caplinks.passwords.html.md#module-caplinks.passwords) | Password hashing for a link's password gate: a protocol and a stdlib default.           |
+| [`records`](_autosummary/caplinks.records.html.md#module-caplinks.records)     | Link records as JSON text in a store of text: a mapping from token to dict.             |
 
 
 # _autosummary/caplinks.limits.html.md
@@ -696,24 +830,74 @@ hashes. `n=2**14, r=8` costs ~16 MB and tens of ms per check, which a host’s
 attempt limit ([`caplinks.limits`](_autosummary/caplinks.limits.html.md#module-caplinks.limits)) bounds.
 
 
+# _autosummary/caplinks.records.html.md
+
+# caplinks.records
+
+Link records as JSON text in a store of text: a mapping from token to dict.
+
+`CapabilityLinks` keeps its records in any `MutableMapping` of token to dict.
+[`JsonRecords`](_autosummary/caplinks.records.html.md#caplinks.records.JsonRecords) makes one from a mapping of *text* (`<token>.json` to the JSON of
+the record), and [`FileTexts`](_autosummary/caplinks.records.html.md#caplinks.records.FileTexts) is that text mapping over a local folder, written
+atomically and readable by the owner only (a record holds a password hash). A host whose
+text lives elsewhere (ssh, S3) passes its own mapping of text.
+
+```pycon
+>>> import tempfile
+>>> from caplinks import CapabilityLinks
+>>> links = CapabilityLinks(JsonRecords(FileTexts(tempfile.mkdtemp())))
+>>> token = links.create({"doc": "d1"})["token"]
+>>> links.status(token)[1]["doc"]
+'d1'
+```
+
+### Classes
+
+| [`FileTexts`](_autosummary/caplinks.records.html.md#caplinks.records.FileTexts)(folder)                                  | `{name: text}` over the files of one local folder (created on first write).   |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
+| [`JsonRecords`](_autosummary/caplinks.records.html.md#caplinks.records.JsonRecords)(texts, \*[, valid, deletable, indent]) | `{token: dict}` over a mapping of text, `<token>.json` to its JSON.           |
+
+### *class* caplinks.records.FileTexts(folder)
+
+Bases: [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)
+
+`{name: text}` over the files of one local folder (created on first write).
+
+Names are plain file names (no path separator, no leading dot, no NUL); a name whose
+file is a symlink out of the folder is missing. The folder is private (mode 0700:
+the names are link tokens) and a write goes to a hidden temporary file (mode 0600)
+that replaces the target, so a reader never sees half a record.
+
+### *class* caplinks.records.JsonRecords(texts, , valid=None, deletable=True, indent=None)
+
+Bases: [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)
+
+`{token: dict}` over a mapping of text, `<token>.json` to its JSON.
+
+A record that cannot be read, is not a JSON object, or fails `valid` raises
+`KeyError`: the link is then missing (every failure closes the link). `valid`
+takes the host’s own check of its fields. `deletable=False` refuses `del`: a
+host that keeps a revoked link as a tombstone says so. `indent` pretty-prints.
+
+The contract of `texts`: reading a missing name raises `KeyError`.
+
+
 # about-this-build.html.md
 
 <!-- generated by epythet -->
 
 # About this build
 
-This documentation was built on **2026-10-26 09:25 UTC** from commit <a href="https://github.com/i2mint/caplinks/commit/b0f350e59218304ce616cc5a9c407b01c7f617ff"><code>b0f350e</code></a> on branch <code>main</code>, for **caplinks 0.0.2** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 09:42 UTC** from commit <a href="https://github.com/i2mint/caplinks/commit/f433e8662ac7a6e77bb3b74c3ff19670fe749a93"><code>f433e86</code></a> on branch <code>main</code>, for **caplinks 0.0.3** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.2) is behind the latest release on PyPI (0.0.3): `pip install caplinks` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                        |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/caplinks/commit/b0f350e59218304ce616cc5a9c407b01c7f617ff"><code>b0f350e59218304ce616cc5a9c407b01c7f617ff</code></a> |
+| Commit              | <a href="https://github.com/i2mint/caplinks/commit/f433e8662ac7a6e77bb3b74c3ff19670fe749a93"><code>f433e8662ac7a6e77bb3b74c3ff19670fe749a93</code></a> |
 | Branch              | <code>main</code>                                                                                                                                      |
 | Tags at this commit | none                                                                                                                                                   |
 | Working tree        | clean                                                                                                                                                  |
@@ -724,9 +908,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/caplinks</code>                                                               |
-| Run          | <a href="https://github.com/i2mint/caplinks/actions/runs/40299191779">40299191779</a>      |
+| Run          | <a href="https://github.com/i2mint/caplinks/actions/runs/40301421879">40301421879</a>      |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>b0f350e59218304ce616cc5a9c407b01c7f617ff</code> (in the history of the built commit) |
+| Event commit | <code>f433e8662ac7a6e77bb3b74c3ff19670fe749a93</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -751,13 +935,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/caplinks/0.0.3/">0.0.3</a>, newer than the documented version (0.0.2).
+Latest release: <a href="https://pypi.org/project/caplinks/0.0.3/">0.0.3</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/caplinks && cd caplinks
-git checkout b0f350e59218304ce616cc5a9c407b01c7f617ff
+git checkout f433e8662ac7a6e77bb3b74c3ff19670fe749a93
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

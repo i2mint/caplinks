@@ -2,18 +2,16 @@
 
 # About this build
 
-This documentation was built on **2026-10-26 09:25 UTC** from commit <a href="https://github.com/i2mint/caplinks/commit/b0f350e59218304ce616cc5a9c407b01c7f617ff"><code>b0f350e</code></a> on branch <code>main</code>, for **caplinks 0.0.2** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-26 09:42 UTC** from commit <a href="https://github.com/i2mint/caplinks/commit/f433e8662ac7a6e77bb3b74c3ff19670fe749a93"><code>f433e86</code></a> on branch <code>main</code>, for **caplinks 0.0.3** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.2) is behind the latest release on PyPI (0.0.3): `pip install caplinks` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                        |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/caplinks/commit/b0f350e59218304ce616cc5a9c407b01c7f617ff"><code>b0f350e59218304ce616cc5a9c407b01c7f617ff</code></a> |
+| Commit              | <a href="https://github.com/i2mint/caplinks/commit/f433e8662ac7a6e77bb3b74c3ff19670fe749a93"><code>f433e8662ac7a6e77bb3b74c3ff19670fe749a93</code></a> |
 | Branch              | <code>main</code>                                                                                                                                      |
 | Tags at this commit | none                                                                                                                                                   |
 | Working tree        | clean                                                                                                                                                  |
@@ -24,9 +22,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/caplinks</code>                                                               |
-| Run          | <a href="https://github.com/i2mint/caplinks/actions/runs/40299191779">40299191779</a>      |
+| Run          | <a href="https://github.com/i2mint/caplinks/actions/runs/40301421879">40301421879</a>      |
 | Ref          | <code>refs/heads/main</code>                                                               |
-| Event commit | <code>b0f350e59218304ce616cc5a9c407b01c7f617ff</code> (in the history of the built commit) |
+| Event commit | <code>f433e8662ac7a6e77bb3b74c3ff19670fe749a93</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -51,13 +49,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/caplinks/0.0.3/">0.0.3</a>, newer than the documented version (0.0.2).
+Latest release: <a href="https://pypi.org/project/caplinks/0.0.3/">0.0.3</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/caplinks && cd caplinks
-git checkout b0f350e59218304ce616cc5a9c407b01c7f617ff
+git checkout f433e8662ac7a6e77bb3b74c3ff19670fe749a93
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

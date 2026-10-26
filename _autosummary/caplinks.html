@@ -67,9 +67,11 @@ data-aria-dark="Switch to auto color mode">
 <li class="toctree-l1 current"><a class="reference internal" href="../api.html">API reference</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">caplinks</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="caplinks.expiry.html">caplinks.expiry</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caplinks.guard.html">caplinks.guard</a></li>
 <li class="toctree-l3"><a class="reference internal" href="caplinks.limits.html">caplinks.limits</a></li>
 <li class="toctree-l3"><a class="reference internal" href="caplinks.links.html">caplinks.links</a></li>
 <li class="toctree-l3"><a class="reference internal" href="caplinks.passwords.html">caplinks.passwords</a></li>
+<li class="toctree-l3"><a class="reference internal" href="caplinks.records.html">caplinks.records</a></li>
 </ul>
 </li>
 </ul>
@@ -86,6 +88,11 @@ data-aria-dark="Switch to auto color mode">
       <i class="i-lucide close"></i>
     </button>
     <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
+<li><a class="reference internal" href="#caplinks.AttemptGuard"><code class="docutils literal notranslate"><span class="pre">AttemptGuard</span></code></a><ul>
+<li><a class="reference internal" href="#caplinks.AttemptGuard.allow"><code class="docutils literal notranslate"><span class="pre">AttemptGuard.allow()</span></code></a></li>
+<li><a class="reference internal" href="#caplinks.AttemptGuard.failed"><code class="docutils literal notranslate"><span class="pre">AttemptGuard.failed()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#caplinks.CapabilityLinks"><code class="docutils literal notranslate"><span class="pre">CapabilityLinks</span></code></a><ul>
 <li><a class="reference internal" href="#caplinks.CapabilityLinks.check_password"><code class="docutils literal notranslate"><span class="pre">CapabilityLinks.check_password()</span></code></a></li>
 <li><a class="reference internal" href="#caplinks.CapabilityLinks.create"><code class="docutils literal notranslate"><span class="pre">CapabilityLinks.create()</span></code></a></li>
@@ -100,6 +107,8 @@ data-aria-dark="Switch to auto color mode">
 <li><a class="reference internal" href="#caplinks.CapabilityLinks.unlocked"><code class="docutils literal notranslate"><span class="pre">CapabilityLinks.unlocked()</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#caplinks.FileTexts"><code class="docutils literal notranslate"><span class="pre">FileTexts</span></code></a></li>
+<li><a class="reference internal" href="#caplinks.JsonRecords"><code class="docutils literal notranslate"><span class="pre">JsonRecords</span></code></a></li>
 <li><a class="reference internal" href="#caplinks.PasswordHasher"><code class="docutils literal notranslate"><span class="pre">PasswordHasher</span></code></a></li>
 <li><a class="reference internal" href="#caplinks.RateLimiter"><code class="docutils literal notranslate"><span class="pre">RateLimiter</span></code></a></li>
 <li><a class="reference internal" href="#caplinks.ScryptHasher"><code class="docutils literal notranslate"><span class="pre">ScryptHasher</span></code></a></li>
@@ -182,24 +191,71 @@ reaches (its scope) and how it is served stay with the app.</p>
 <div class="table-wrapper autosummary longtable docutils container">
 <table class="autosummary longtable docutils align-default">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#caplinks.CapabilityLinks" title="caplinks.CapabilityLinks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CapabilityLinks</span></code></a>([store, hasher, clock, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#caplinks.AttemptGuard" title="caplinks.AttemptGuard"><code class="xref py py-obj docutils literal notranslate"><span class="pre">AttemptGuard</span></code></a>(*[, client_limiter, ...])</p></td>
+<td><p>Decide whether a password try may be made, and lock a link that is being guessed.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#caplinks.FileTexts" title="caplinks.FileTexts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FileTexts</span></code></a>(folder)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{name:</span> <span class="pre">text}</span></code> over the files of one local folder (created on first write).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#caplinks.JsonRecords" title="caplinks.JsonRecords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">JsonRecords</span></code></a>(texts, *[, valid, deletable, indent])</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{token:</span> <span class="pre">dict}</span></code> over a mapping of text, <code class="docutils literal notranslate"><span class="pre">&lt;token&gt;.json</span></code> to its JSON.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#caplinks.CapabilityLinks" title="caplinks.CapabilityLinks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CapabilityLinks</span></code></a>([store, hasher, clock, ...])</p></td>
 <td><p>Create, read, list and revoke capability links, and gate them on a password.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#caplinks.PasswordHasher" title="caplinks.PasswordHasher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PasswordHasher</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#caplinks.PasswordHasher" title="caplinks.PasswordHasher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PasswordHasher</span></code></a>(*args, **kwargs)</p></td>
 <td><p>What a link needs to gate on a password: <code class="docutils literal notranslate"><span class="pre">verify</span></code> returns a bool, never raises.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#caplinks.RateLimiter" title="caplinks.RateLimiter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RateLimiter</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#caplinks.RateLimiter" title="caplinks.RateLimiter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RateLimiter</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Decide whether one more attempt keyed by <code class="docutils literal notranslate"><span class="pre">key</span></code> is allowed now.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#caplinks.ScryptHasher" title="caplinks.ScryptHasher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScryptHasher</span></code></a>([n, r, p, salt_bytes, dklen])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#caplinks.ScryptHasher" title="caplinks.ScryptHasher"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ScryptHasher</span></code></a>([n, r, p, salt_bytes, dklen])</p></td>
 <td><p>Stdlib <code class="docutils literal notranslate"><span class="pre">hashlib.scrypt</span></code>, stored as <code class="docutils literal notranslate"><span class="pre">scrypt$n$r$p$salt$hash</span></code> (base64).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#caplinks.SlidingWindowLimiter" title="caplinks.SlidingWindowLimiter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SlidingWindowLimiter</span></code></a>(*[, max_per_window, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#caplinks.SlidingWindowLimiter" title="caplinks.SlidingWindowLimiter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SlidingWindowLimiter</span></code></a>(*[, max_per_window, ...])</p></td>
 <td><p>At most <code class="docutils literal notranslate"><span class="pre">max_per_window</span></code> hits per key per window; in memory, per process.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<dl class="py class">
+<dt class="sig sig-object py" id="caplinks.AttemptGuard">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">caplinks.</span></span><span class="sig-name descname"><span class="pre">AttemptGuard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client_limiter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">link_limiter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lock_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">300.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">monotonic&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/caplinks/guard.html#AttemptGuard"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caplinks.AttemptGuard" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Decide whether a password try may be made, and lock a link that is being guessed.</p>
+<p><code class="docutils literal notranslate"><span class="pre">client_limiter</span></code> counts every try of one client on one link; <code class="docutils literal notranslate"><span class="pre">link_limiter</span></code>
+counts the wrong passwords a link takes from everyone and, past its limit, locks the
+link for <code class="docutils literal notranslate"><span class="pre">lock_s</span></code> seconds. Both are anything with <code class="docutils literal notranslate"><span class="pre">allow(key)</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code> (a Redis
+one shares the count between workers); the lock itself is per process. <code class="docutils literal notranslate"><span class="pre">clock</span></code>
+returns a monotonic time in seconds (tests pin it; the default limiters use it too).
+Keep <code class="docutils literal notranslate"><span class="pre">lock_s</span></code> at least the limiter’s window, or the first failure after a lock ends
+locks the link again at once.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="caplinks.AttemptGuard.allow">
+<span class="sig-name descname"><span class="pre">allow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">link</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/caplinks/guard.html#AttemptGuard.allow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caplinks.AttemptGuard.allow" title="Link to this definition">#</a></dt>
+<dd><p>Whether <code class="docutils literal notranslate"><span class="pre">client</span></code> may try a password on <code class="docutils literal notranslate"><span class="pre">link</span></code> now (counts the try).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="caplinks.AttemptGuard.failed">
+<span class="sig-name descname"><span class="pre">failed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">link</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/caplinks/guard.html#AttemptGuard.failed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caplinks.AttemptGuard.failed" title="Link to this definition">#</a></dt>
+<dd><p>Record a wrong password on <code class="docutils literal notranslate"><span class="pre">link</span></code>; lock the link if it takes too many.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="caplinks.CapabilityLinks">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">caplinks.</span></span><span class="sig-name descname"><span class="pre">CapabilityLinks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">store</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hasher</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">now_utc&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_password_len</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/caplinks/links.html#CapabilityLinks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caplinks.CapabilityLinks" title="Link to this definition">#</a></dt>
@@ -346,6 +402,33 @@ stays revoked (<code class="docutils literal notranslate"><span class="pre">KeyE
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="caplinks.FileTexts">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">caplinks.</span></span><span class="sig-name descname"><span class="pre">FileTexts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/caplinks/records.html#FileTexts"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caplinks.FileTexts" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MutableMapping</span></code></a></p>
+<p><code class="docutils literal notranslate"><span class="pre">{name:</span> <span class="pre">text}</span></code> over the files of one local folder (created on first write).</p>
+<p>Names are plain file names (no path separator, no leading dot, no NUL); a name whose
+file is a symlink out of the folder is missing. The folder is private (mode 0700:
+the names are link tokens) and a write goes to a hidden temporary file (mode 0600)
+that replaces the target, so a reader never sees half a record.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="caplinks.JsonRecords">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">caplinks.</span></span><span class="sig-name descname"><span class="pre">JsonRecords</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">texts</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">valid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deletable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">indent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/caplinks/records.html#JsonRecords"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caplinks.JsonRecords" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MutableMapping</span></code></a></p>
+<p><code class="docutils literal notranslate"><span class="pre">{token:</span> <span class="pre">dict}</span></code> over a mapping of text, <code class="docutils literal notranslate"><span class="pre">&lt;token&gt;.json</span></code> to its JSON.</p>
+<p>A record that cannot be read, is not a JSON object, or fails <code class="docutils literal notranslate"><span class="pre">valid</span></code> raises
+<code class="docutils literal notranslate"><span class="pre">KeyError</span></code>: the link is then missing (every failure closes the link). <code class="docutils literal notranslate"><span class="pre">valid</span></code>
+takes the host’s own check of its fields. <code class="docutils literal notranslate"><span class="pre">deletable=False</span></code> refuses <code class="docutils literal notranslate"><span class="pre">del</span></code>: a
+host that keeps a revoked link as a tombstone says so. <code class="docutils literal notranslate"><span class="pre">indent</span></code> pretty-prints.</p>
+<p>The contract of <code class="docutils literal notranslate"><span class="pre">texts</span></code>: reading a missing name raises <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="caplinks.PasswordHasher">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">caplinks.</span></span><span class="sig-name descname"><span class="pre">PasswordHasher</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/caplinks/passwords.html#PasswordHasher"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#caplinks.PasswordHasher" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
@@ -487,14 +570,20 @@ A moment already past is refused.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="caplinks.expiry.html#module-caplinks.expiry" title="caplinks.expiry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">expiry</span></code></a></p></td>
 <td><p>When a link stops working: reading an expiry the way a person writes one.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="caplinks.limits.html#module-caplinks.limits" title="caplinks.limits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">limits</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="caplinks.guard.html#module-caplinks.guard" title="caplinks.guard"><code class="xref py py-obj docutils literal notranslate"><span class="pre">guard</span></code></a></p></td>
+<td><p>The per-link lock-out: limit password tries, and lock a link that takes too many.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="caplinks.limits.html#module-caplinks.limits" title="caplinks.limits"><code class="xref py py-obj docutils literal notranslate"><span class="pre">limits</span></code></a></p></td>
 <td><p>Limiting password attempts: the <code class="docutils literal notranslate"><span class="pre">allow(key)</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code> protocol and an in-memory default.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="caplinks.links.html#module-caplinks.links" title="caplinks.links"><code class="xref py py-obj docutils literal notranslate"><span class="pre">links</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="caplinks.links.html#module-caplinks.links" title="caplinks.links"><code class="xref py py-obj docutils literal notranslate"><span class="pre">links</span></code></a></p></td>
 <td><p>Capability links: a record behind an unguessable token, with an optional password gate.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="caplinks.passwords.html#module-caplinks.passwords" title="caplinks.passwords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">passwords</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="caplinks.passwords.html#module-caplinks.passwords" title="caplinks.passwords"><code class="xref py py-obj docutils literal notranslate"><span class="pre">passwords</span></code></a></p></td>
 <td><p>Password hashing for a link's password gate: a protocol and a stdlib default.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="caplinks.records.html#module-caplinks.records" title="caplinks.records"><code class="xref py py-obj docutils literal notranslate"><span class="pre">records</span></code></a></p></td>
+<td><p>Link records as JSON text in a store of text: a mapping from token to dict.</p></td>
 </tr>
 </tbody>
 </table>
@@ -541,7 +630,7 @@ A moment already past is refused.</p>
     </div>
   </div>
 </footer>
-      <script src="../_static/documentation_options.js?v=e3a6060d"></script>
+      <script src="../_static/documentation_options.js?v=47de8214"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script src="../_static/clipboard.min.js?v=a7894cd8"></script>

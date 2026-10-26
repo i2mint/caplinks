@@ -30,12 +30,43 @@ True
 
 ### Classes
 
-| [`CapabilityLinks`](#caplinks.CapabilityLinks)([store, hasher, clock, ...])    | Create, read, list and revoke capability links, and gate them on a password.    |
-|--------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| [`PasswordHasher`](#caplinks.PasswordHasher)(\*args, \*\*kwargs)              | What a link needs to gate on a password: `verify` returns a bool, never raises. |
-| [`RateLimiter`](#caplinks.RateLimiter)(\*args, \*\*kwargs)                 | Decide whether one more attempt keyed by `key` is allowed now.                  |
-| [`ScryptHasher`](#caplinks.ScryptHasher)([n, r, p, salt_bytes, dklen])      | Stdlib `hashlib.scrypt`, stored as `scrypt$n$r$p$salt$hash` (base64).           |
-| [`SlidingWindowLimiter`](#caplinks.SlidingWindowLimiter)(\*[, max_per_window, ...]) | At most `max_per_window` hits per key per window; in memory, per process.       |
+| [`AttemptGuard`](#caplinks.AttemptGuard)(\*[, client_limiter, ...])            | Decide whether a password try may be made, and lock a link that is being guessed.   |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| [`FileTexts`](#caplinks.FileTexts)(folder)                                  | `{name: text}` over the files of one local folder (created on first write).         |
+| [`JsonRecords`](#caplinks.JsonRecords)(texts, \*[, valid, deletable, indent]) | `{token: dict}` over a mapping of text, `<token>.json` to its JSON.                 |
+| [`CapabilityLinks`](#caplinks.CapabilityLinks)([store, hasher, clock, ...])       | Create, read, list and revoke capability links, and gate them on a password.        |
+| [`PasswordHasher`](#caplinks.PasswordHasher)(\*args, \*\*kwargs)                 | What a link needs to gate on a password: `verify` returns a bool, never raises.     |
+| [`RateLimiter`](#caplinks.RateLimiter)(\*args, \*\*kwargs)                    | Decide whether one more attempt keyed by `key` is allowed now.                      |
+| [`ScryptHasher`](#caplinks.ScryptHasher)([n, r, p, salt_bytes, dklen])         | Stdlib `hashlib.scrypt`, stored as `scrypt$n$r$p$salt$hash` (base64).               |
+| [`SlidingWindowLimiter`](#caplinks.SlidingWindowLimiter)(\*[, max_per_window, ...])    | At most `max_per_window` hits per key per window; in memory, per process.           |
+
+### *class* caplinks.AttemptGuard(\*, client_limiter=None, link_limiter=None, lock_s=300.0, clock=<built-in function monotonic>)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Decide whether a password try may be made, and lock a link that is being guessed.
+
+`client_limiter` counts every try of one client on one link; `link_limiter`
+counts the wrong passwords a link takes from everyone and, past its limit, locks the
+link for `lock_s` seconds. Both are anything with `allow(key) -> bool` (a Redis
+one shares the count between workers); the lock itself is per process. `clock`
+returns a monotonic time in seconds (tests pin it; the default limiters use it too).
+Keep `lock_s` at least the limiter’s window, or the first failure after a lock ends
+locks the link again at once.
+
+#### allow(link, client)
+
+Whether `client` may try a password on `link` now (counts the try).
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+#### failed(link)
+
+Record a wrong password on `link`; lock the link if it takes too many.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### *class* caplinks.CapabilityLinks(store=None, \*, hasher=None, clock=<function now_utc>, min_password_len=8)
 
@@ -139,6 +170,30 @@ A revoked record is never unlocked, whatever the caller checked before.
 
 * **Return type:**
   [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+### *class* caplinks.FileTexts(folder)
+
+Bases: [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)
+
+`{name: text}` over the files of one local folder (created on first write).
+
+Names are plain file names (no path separator, no leading dot, no NUL); a name whose
+file is a symlink out of the folder is missing. The folder is private (mode 0700:
+the names are link tokens) and a write goes to a hidden temporary file (mode 0600)
+that replaces the target, so a reader never sees half a record.
+
+### *class* caplinks.JsonRecords(texts, , valid=None, deletable=True, indent=None)
+
+Bases: [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)
+
+`{token: dict}` over a mapping of text, `<token>.json` to its JSON.
+
+A record that cannot be read, is not a JSON object, or fails `valid` raises
+`KeyError`: the link is then missing (every failure closes the link). `valid`
+takes the host’s own check of its fields. `deletable=False` refuses `del`: a
+host that keeps a revoked link as a tombstone says so. `indent` pretty-prints.
+
+The contract of `texts`: reading a missing name raises `KeyError`.
 
 ### *class* caplinks.PasswordHasher(\*args, \*\*kwargs)
 
@@ -254,6 +309,8 @@ A record without its password hash; `protected` says whether it has one.
 
 | [`expiry`](caplinks.expiry.html.md#module-caplinks.expiry)       | When a link stops working: reading an expiry the way a person writes one.               |
 |--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| [`guard`](caplinks.guard.html.md#module-caplinks.guard)         | The per-link lock-out: limit password tries, and lock a link that takes too many.       |
 | [`limits`](caplinks.limits.html.md#module-caplinks.limits)       | Limiting password attempts: the `allow(key) -> bool` protocol and an in-memory default. |
 | [`links`](caplinks.links.html.md#module-caplinks.links)         | Capability links: a record behind an unguessable token, with an optional password gate. |
 | [`passwords`](caplinks.passwords.html.md#module-caplinks.passwords) | Password hashing for a link's password gate: a protocol and a stdlib default.           |
+| [`records`](caplinks.records.html.md#module-caplinks.records)     | Link records as JSON text in a store of text: a mapping from token to dict.             |
