@@ -305,3 +305,42 @@ def test_set_expires_revives_an_expired_link_but_not_a_revoked_one():
     for call in (lambda: links.set_expires(tok, "3d"), lambda: links.set_password(tok, PW)):
         with pytest.raises(KeyError):
             call()
+
+
+def test_set_password_new_one_opens_old_one_does_not():
+    links = CapabilityLinks(hasher=ScryptHasher(n=2**4))
+    tok = links.create(password=PW)["token"]
+    links.set_password(tok, "another pass")
+    rec = links.record(tok)
+    assert links.check_password(rec, "another pass") and not links.check_password(rec, PW)
+    links.set_password(tok, None)
+    assert links.unlocked(links.record(tok), None, max_age_s=60)
+
+
+def test_setters_refuse_the_past_and_the_missing():
+    links = CapabilityLinks()
+    tok = links.create()["token"]
+    with pytest.raises(ValueError, match="past"):
+        links.set_expires(tok, "2000-01-01")
+    for call in (lambda: links.set_expires("B" * 22, "1d"), lambda: links.set_password("B" * 22, PW)):
+        with pytest.raises(KeyError):
+            call()
+
+
+def test_a_revoked_id_cannot_be_gated_again():
+    links = CapabilityLinks()
+    tid = "C" * 22
+    links.create(token=tid)
+    links.revoke(tid)
+    with pytest.raises(ValueError, match="already exists"):
+        links.create(token=tid)
+    assert links.status(tid)[0] == "missing"
+
+
+def test_create_token_does_not_overwrite_a_damaged_record():
+    store = {"D" * 22: {"junk": 1}}
+    links = CapabilityLinks(store)
+    with pytest.raises(ValueError, match="already exists"):
+        links.create(token="D" * 22)
+    assert store["D" * 22] == {"junk": 1}
+

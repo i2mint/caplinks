@@ -112,25 +112,25 @@ class CapabilityLinks:
         ``expires`` is anything :func:`caplinks.expiry.parse_expires` reads, 7 days by
         default (``"never"`` for none); ``password`` gates the link. ``token`` gates an
         id that already exists (a host whose links must not change): it must look like
-        a token (:func:`check_token`) and be unused; leave it out for a fresh one.
+        a token (:func:`check_token`) and be unused; leave it out for a fresh one. The
+        caller then owns the id's randomness: use 128 random bits, as :func:`new_token`.
         """
         fields = dict(fields or {})
         if token is not None:
             check_token(token)
-            if self.record(token) is not None:
+            if token in self.store:  # even a damaged record is not free to overwrite
                 raise ValueError("a link with this token already exists")
         clash = sorted(set(fields) & {*RECORD_FIELDS, *_VIEW_FIELDS})
         if clash:
             raise ValueError(f"fields {clash} are the link's own; name yours otherwise")
-        if password is not None:
-            self._check_password_len(password)
+        hashed = self._hash_password(password)
         now = self.clock()
         record = {
             "token": token or new_token(),
             "created": now.isoformat(),
             **fields,
             "expires": parse_expires(expires, now=now),
-            "password": self.hasher.hash(password) if password else None,
+            "password": hashed,
             "revoked": None,
         }
         self.store[record["token"]] = record
@@ -174,40 +174,45 @@ class CapabilityLinks:
         return sorted(out, key=lambda r: r["created"], reverse=True)
 
     def set_password(self, token: str, password: str | None) -> dict:
-        """Give a live link a new password, or ``None`` to open it.
+        """Give an unrevoked link a new password, or ``None`` to open it.
 
         A new password ends every open unlock at once. A revoked link stays revoked
         (``KeyError``).
         """
-        if password is not None:
-            self._check_password_len(password)
-        rec = self._live_record(token)
-        rec["password"] = self.hasher.hash(password) if password else None
-        self.store[token] = rec
-        return public_record(rec)
+        return self._update(token, password=self._hash_password(password))
 
     def set_expires(self, token: str, expires) -> dict:
-        """Move a live link's expiry (anything :func:`parse_expires` reads; ``"never"``
-        for none). An expired link may be given a later one; a revoked link stays
-        revoked (``KeyError``).
+        """Move an unrevoked link's expiry (anything :func:`parse_expires` reads;
+        ``"never"`` for none). An expired link may be given a later one; a revoked link
+        stays revoked (``KeyError``).
         """
-        rec = self._live_record(token)
-        rec["expires"] = parse_expires(expires, now=self.clock())
+        return self._update(token, expires=parse_expires(expires, now=self.clock()))
+
+    def _update(self, token: str, **changes) -> dict:
+        # The store has no compare-and-set: the record is read just before the write (the
+        # slow hashing is done by the caller) so a revoke that landed meanwhile is not
+        # undone. Hosts with several workers writing the
+        # same link still need to serialise writes per token.
+        rec = self._unrevoked(token)
+        if rec is None:
+            raise KeyError(token)
+        rec.update(changes)
         self.store[token] = rec
         return public_record(rec)
 
-    def _live_record(self, token: str) -> dict:
+    def _unrevoked(self, token: str) -> dict | None:
         rec = self.record(token)
-        if rec is None or rec.get("revoked"):
-            raise KeyError(token)
-        return rec
+        return None if rec is None or rec.get("revoked") else rec
 
-    def _check_password_len(self, password: str) -> None:
+    def _hash_password(self, password: str | None) -> str | None:
+        if password is None:
+            return None
         if len(password) < self.min_password_len:
             raise ValueError(
                 f"a link password needs at least {self.min_password_len} characters "
                 "(anyone can try it); omit it for no password"
             )
+        return self.hasher.hash(password)
 
     def revoke(self, token: str) -> dict:
         """End a link now (idempotent). The record stays, as a tombstone."""
