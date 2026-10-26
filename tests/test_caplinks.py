@@ -266,3 +266,81 @@ def test_parse_expires_far_future_is_a_value_error(value):
 def test_limiter_refuses_settings_that_disable_it(kw):
     with pytest.raises(ValueError):
         SlidingWindowLimiter(**kw)
+
+
+def test_create_gates_an_existing_id():
+    links = CapabilityLinks()
+    tid = "A" * 22
+    rec = links.create({"x": 1}, password=PW, expires="never", token=tid)
+    assert rec["token"] == tid and rec["protected"]
+    assert links.status(tid)[0] == "ok"
+    with pytest.raises(ValueError, match="already exists"):
+        links.create(token=tid)
+    with pytest.raises(ValueError, match="not a link token"):
+        links.create(token="../x")
+
+
+def test_set_password_ends_open_unlocks():
+    links = CapabilityLinks()
+    tok = links.create(password=PW)["token"]
+    cookie = links.unlock_value(links.record(tok))
+    assert links.unlocked(links.record(tok), cookie, max_age_s=3600)
+    assert links.set_password(tok, "another pass")["protected"]
+    assert not links.unlocked(links.record(tok), cookie, max_age_s=3600)
+    assert not links.set_password(tok, None)["protected"]
+    with pytest.raises(ValueError):
+        links.set_password(tok, "short")
+
+
+def test_set_expires_revives_an_expired_link_but_not_a_revoked_one():
+    clock = Clock()
+    links = CapabilityLinks(clock=clock)
+    tok = links.create(expires="1d")["token"]
+    clock.t = T0 + timedelta(days=2)
+    assert links.status(tok)[0] == "expired"
+    links.set_expires(tok, "3d")
+    assert links.status(tok)[0] == "ok"
+    assert links.set_expires(tok, "never")["expires"] is None
+    links.revoke(tok)
+    for call in (lambda: links.set_expires(tok, "3d"), lambda: links.set_password(tok, PW)):
+        with pytest.raises(KeyError):
+            call()
+
+
+def test_set_password_new_one_opens_old_one_does_not():
+    links = CapabilityLinks(hasher=ScryptHasher(n=2**4))
+    tok = links.create(password=PW)["token"]
+    links.set_password(tok, "another pass")
+    rec = links.record(tok)
+    assert links.check_password(rec, "another pass") and not links.check_password(rec, PW)
+    links.set_password(tok, None)
+    assert links.unlocked(links.record(tok), None, max_age_s=60)
+
+
+def test_setters_refuse_the_past_and_the_missing():
+    links = CapabilityLinks()
+    tok = links.create()["token"]
+    with pytest.raises(ValueError, match="past"):
+        links.set_expires(tok, "2000-01-01")
+    for call in (lambda: links.set_expires("B" * 22, "1d"), lambda: links.set_password("B" * 22, PW)):
+        with pytest.raises(KeyError):
+            call()
+
+
+def test_a_revoked_id_cannot_be_gated_again():
+    links = CapabilityLinks()
+    tid = "C" * 22
+    links.create(token=tid)
+    links.revoke(tid)
+    with pytest.raises(ValueError, match="already exists"):
+        links.create(token=tid)
+    assert links.status(tid)[0] == "missing"
+
+
+def test_create_token_does_not_overwrite_a_damaged_record():
+    store = {"D" * 22: {"junk": 1}}
+    links = CapabilityLinks(store)
+    with pytest.raises(ValueError, match="already exists"):
+        links.create(token="D" * 22)
+    assert store["D" * 22] == {"junk": 1}
+

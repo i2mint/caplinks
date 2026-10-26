@@ -23,6 +23,7 @@ links.revoke(rec["token"])                   # now "missing"
 ## What is in it
 
 - `CapabilityLinks`: create, read, list and revoke links, and gate them on a password. Records are plain dicts in any `MutableMapping` keyed by token: the generic fields are `token`, `created`, `expires`, `password` (a hash) and `revoked`; your own fields (what the link reaches) sit beside them.
+- Gating an id you already have: `create(..., token=existing_id)` keeps the id; `set_password(token, pw_or_None)` and `set_expires(token, when)` change a live link later (a new password ends every open unlock).
 - `ScryptHasher` (stdlib scrypt) behind the `PasswordHasher` protocol (`hash`, `verify -> bool`): pass `hasher=` for argon2 or anything else.
 - `parse_expires` reads what people write (`30m`, `12h`, `7d`, `2w`, `2026-11-01` meaning the end of that day UTC, an ISO timestamp, `never`) and refuses the past; `is_expired` fails closed.
 - `SlidingWindowLimiter` behind the `RateLimiter` protocol (`allow(key) -> bool`): count password attempts per client, per link, or both. It is per process; a shared limiter of the same shape (Redis, say) fits where several workers serve the links.
