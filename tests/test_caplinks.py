@@ -344,3 +344,145 @@ def test_create_token_does_not_overwrite_a_damaged_record():
         links.create(token="D" * 22)
     assert store["D" * 22] == {"junk": 1}
 
+
+
+# -- AttemptGuard, JsonRecords, FileTexts --
+
+
+def test_guard_limits_one_client_without_locking_the_link():
+    from caplinks import AttemptGuard
+
+    guard = AttemptGuard(client_limiter=SlidingWindowLimiter(max_per_window=2))
+    assert [guard.allow("L", "a") for _ in range(3)] == [True, True, False]
+    assert guard.allow("L", "b")  # another client is not affected
+
+
+def test_guard_locks_a_link_taking_many_failures_then_reopens():
+    from caplinks import AttemptGuard
+
+    t = [0.0]
+    guard = AttemptGuard(
+        link_limiter=SlidingWindowLimiter(max_per_window=2, clock=lambda: t[0]),
+        lock_s=60,
+        clock=lambda: t[0],
+    )
+    for _ in range(2):
+        guard.failed("L")
+    assert guard.allow("L", "a")  # at the limit, not past it
+    guard.failed("L")
+    assert not guard.allow("L", "a") and not guard.allow("L", "b")
+    assert guard.allow("other", "a")
+    t[0] = 60.0
+    assert guard.allow("L", "a")
+    assert "L" not in guard._locked  # pruned
+
+
+def test_json_records_roundtrip_and_fail_closed(tmp_path):
+    from caplinks import FileTexts, JsonRecords
+
+    recs = JsonRecords(FileTexts(tmp_path / "r"), valid=lambda r: "scope" in r)
+    links = CapabilityLinks(recs)
+    tok = links.create({"scope": 1}, password=PW)["token"]
+    assert links.status(tok)[0] == "ok" and tok in recs and list(recs) == [tok]
+    (tmp_path / "r" / f"{tok}.json").write_text("{not json")
+    assert links.status(tok)[0] == "missing" and tok in recs
+    (tmp_path / "r" / f"{tok}.json").write_text('{"token": "%s"}' % tok)
+    assert links.status(tok)[0] == "missing"  # fails the host's check
+    assert "../x" not in recs
+    with pytest.raises(KeyError):
+        recs["../x"]
+
+
+def test_json_records_can_refuse_deletes(tmp_path):
+    from caplinks import FileTexts, JsonRecords
+
+    recs = JsonRecords(FileTexts(tmp_path), deletable=False)
+    tok = CapabilityLinks(recs).create()["token"]
+    with pytest.raises(TypeError):
+        del recs[tok]
+
+
+def test_file_texts_are_private_atomic_and_confined(tmp_path):
+    import os
+
+    from caplinks import FileTexts
+
+    texts = FileTexts(tmp_path / "t")
+    texts["a.json"] = "one"
+    texts["a.json"] = "two"
+    assert texts["a.json"] == "two" and list(texts) == ["a.json"]
+    assert os.stat(tmp_path / "t" / "a.json").st_mode & 0o777 == 0o600
+    assert os.stat(tmp_path / "t").st_mode & 0o777 == 0o700
+    assert sorted(p.name for p in (tmp_path / "t").iterdir()) == ["a.json"]  # no temp
+    for bad in ("../a", ".hidden", "x/y", "", "a\0b"):
+        assert bad not in texts
+        with pytest.raises(KeyError):
+            texts[bad]
+    del texts["a.json"]
+    with pytest.raises(KeyError):
+        del texts["a.json"]
+
+
+def test_a_failed_write_leaves_the_old_text_and_no_temp_file(tmp_path):
+    from caplinks import FileTexts
+
+    texts = FileTexts(tmp_path)
+    texts["a.json"] = "old"
+    with pytest.raises(TypeError):
+        texts["a.json"] = 5  # not text: the write fails midway
+    assert texts["a.json"] == "old"
+    assert [p.name for p in tmp_path.iterdir()] == ["a.json"]
+
+
+def test_stray_files_and_symlinks_do_not_break_listing_or_escape(tmp_path):
+    from caplinks import FileTexts, JsonRecords
+
+    outside = tmp_path / "secret.json"
+    outside.write_text("{}")
+    folder = tmp_path / "r"
+    recs = JsonRecords(FileTexts(folder))
+    tok = CapabilityLinks(recs).create()["token"]
+    (folder / ".DS_Store").write_text("x")
+    (folder / "README.json").write_text("{}")
+    (folder / ("S" * 22 + ".json")).symlink_to(outside)
+    assert list(recs) == [tok]
+    assert set(dict(recs.items())) == {tok}
+    assert "S" * 22 not in recs
+
+
+def test_texts_returning_none_is_a_missing_link(tmp_path):
+    from caplinks import JsonRecords
+
+    class Nones(dict):
+        def __getitem__(self, k):
+            return None
+
+    recs = JsonRecords(Nones())
+    with pytest.raises(KeyError):
+        recs["N" * 22]
+
+
+def test_guard_default_limiters_follow_the_pinned_clock():
+    from caplinks import AttemptGuard
+
+    t = [0.0]
+    guard = AttemptGuard(clock=lambda: t[0])
+    assert all(guard.allow("L", "a") for _ in range(10)) and not guard.allow("L", "a")
+    t[0] = 301.0
+    assert guard.allow("L", "a")
+
+
+def test_guard_is_safe_under_threads():
+    import threading
+
+    from caplinks import AttemptGuard
+
+    guard = AttemptGuard(client_limiter=SlidingWindowLimiter(max_per_window=50))
+    results = []
+    threads = [
+        threading.Thread(target=lambda: results.append(guard.allow("L", "a")))
+        for _ in range(200)
+    ]
+    [th.start() for th in threads]
+    [th.join() for th in threads]
+    assert sum(results) == 50
